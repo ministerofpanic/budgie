@@ -34,7 +34,7 @@ requests to protected routes are rejected.
   minus everything assigned up to and including this month, minus last month's
   cash overspending.
 - Available per category = assigned + activity + carried-in balance. Positive
-  balances roll forward. Negative *cash* balances do not - they reduce next
+  balances roll forward. Negative _cash_ balances do not - they reduce next
   month's Ready to Assign.
 - Credit cards: spending on a credit account moves that amount from the spending
   category into the card's payment category. Overspending on a credit card

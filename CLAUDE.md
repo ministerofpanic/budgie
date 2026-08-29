@@ -8,7 +8,7 @@ sign-in, no payment or subscription features anywhere in the product.
 - **WIP limit 1.** One item from `ACTIVE.md` at a time. Scope it fully before
   writing code.
 - **Done means done.** Implemented, tested, `pnpm lint && pnpm format:check &&
-  pnpm typecheck && pnpm test && pnpm build` all green, and checked against the
+pnpm typecheck && pnpm test && pnpm build` all green, and checked against the
   real dependency (live Neon, live deploy) where one is involved.
 - **Rigor-verification.** After writing a test that asserts subtle behaviour,
   break the implementation deliberately, confirm the test fails for the right
@@ -41,12 +41,12 @@ sign-in, no payment or subscription features anywhere in the product.
 
 ## Layout
 
-| Path            | What                                                     |
-| --------------- | -------------------------------------------------------- |
-| `apps/web`      | Next.js App Router app - the only deployable             |
-| `packages/core` | Result + money primitives, pure and dependency-free      |
-| `packages/db`   | (not yet) Drizzle schema and client                      |
-| `packages/budget` | (not yet) pure budget engine, no I/O                   |
+| Path              | What                                                |
+| ----------------- | --------------------------------------------------- |
+| `apps/web`        | Next.js App Router app - the only deployable        |
+| `packages/core`   | Result + money primitives, pure and dependency-free |
+| `packages/db`     | (not yet) Drizzle schema and client                 |
+| `packages/budget` | (not yet) pure budget engine, no I/O                |
 
 Internal packages are consumed as TypeScript source (no build step), so
 `apps/web/next.config.ts` lists them in `transpilePackages`. Add new ones there.
