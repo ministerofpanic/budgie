@@ -8,13 +8,19 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "test:e2e": "playwright test",
+    "auth:generate": "better-auth generate --config src/lib/auth.ts --output ../../packages/db/src/schema/auth.ts -y"
   },
   "dependencies": {
+    "@better-auth/passkey": "catalog:",
     "@budgie/core": "workspace:*",
+    "@budgie/db": "workspace:*",
     "@radix-ui/react-slot": "catalog:",
+    "better-auth": "catalog:",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
+    "drizzle-orm": "catalog:",
     "lucide-react": "catalog:",
     "next": "catalog:",
     "react": "catalog:",
@@ -23,10 +29,12 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@playwright/test": "catalog:",
     "@tailwindcss/postcss": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "auth": "catalog:",
     "tailwindcss": "catalog:",
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",

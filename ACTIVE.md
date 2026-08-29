@@ -4,22 +4,25 @@ One item at a time. Finish it completely before pulling the next from `BACKLOG.m
 
 ---
 
-## Phase 03 - Passkey auth
+## Phase 04 - Budget engine
 
-Better Auth with the passkey plugin and the Drizzle adapter.
+`packages/budget`, pure functions over plain data. No DB imports, no classes.
 
-- Generate Better Auth's tables with its own CLI; do not hand-write them.
-- Server config: `rpID` and `rpName` from env, `origin` from `NEXT_PUBLIC_APP_URL`.
-- Sign-up: create user, register first passkey, then immediately prompt to add a
-  second one. Losing the only passkey means losing the account.
-- Sign-in with conditional UI (`autocomplete="username webauthn"`, `autoFill: true`).
-- Passkey management: list, name by device, rename, revoke. Never let a user
-  revoke their last passkey.
-- Route protection in the data-access layer, not in page components.
-- Add Playwright, drive registration and sign-in with its virtual authenticator
-  (CDP `WebAuthn.addVirtualAuthenticator`).
-- **Also here:** verify narrow-viewport rendering properly with Playwright device
-  emulation - it was never confirmed during the scaffold.
+- Ready to Assign = inflows to on-budget accounts up to and including this month,
+  minus everything assigned up to and including this month, minus last month's
+  cash overspending.
+- Available per category = assigned + activity + carried-in balance. Positive
+  balances roll forward. Negative _cash_ balances do not - they reduce next
+  month's Ready to Assign.
+- Credit cards: spending on a credit account moves that amount from the spending
+  category into the card's payment category. Overspending on a credit card
+  behaves differently from cash overspending - the debt increases and the payment
+  category goes negative. Get this right; it is the fiddliest rule in the product.
+- Transfers between on-budget accounts are neither income nor spending.
+- Any month must be computable from the start of the budget without stored
+  snapshots.
+- Rigor-verification on every rule: break it, watch the test fail correctly,
+  restore it.
 
-**Done when** a passkey registers and signs in end-to-end in CI, and anonymous
-requests to protected routes are rejected.
+**Done when** the rule set passes its tests, including a multi-month scenario
+with overspend, rollover, credit card spending and a payment.

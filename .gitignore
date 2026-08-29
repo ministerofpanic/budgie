@@ -9,3 +9,6 @@ coverage
 !.env.example
 .DS_Store
 .netlify
+test-results
+playwright-report
+blob-report

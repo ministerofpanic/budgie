@@ -9,6 +9,14 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+  BETTER_AUTH_URL: "http://localhost:3000"
+  NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+  PASSKEY_RP_ID: "localhost"
+  PASSKEY_RP_NAME: "Budgie"
+
 jobs:
   check:
     name: lint / typecheck / test / build
@@ -30,3 +38,20 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+
+  e2e:
+    name: passkey auth (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @budgie/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @budgie/web exec playwright test

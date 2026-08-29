@@ -8,12 +8,16 @@ ignoreScripts: false
 
 # Single source of truth for every third-party version. Exact pins only, no ranges.
 catalog:
+  "@better-auth/passkey": 1.7.1
   "@neondatabase/serverless": 1.1.0
+  "@playwright/test": 1.62.1
   "@radix-ui/react-slot": 1.3.3
   "@tailwindcss/postcss": 4.3.3
   "@types/node": 26.2.0
   "@types/react": 19.2.18
   "@types/react-dom": 19.2.5
+  auth: 1.7.1
+  "better-auth": 1.7.1
   "class-variance-authority": 0.7.1
   clsx: 2.1.1
   "drizzle-kit": 0.31.10
