@@ -1,0 +1,9 @@
+# Netlify project settings: leave the base directory at the repo root and set the
+# package directory to apps/web so pnpm workspaces resolve.
+[build]
+command = "pnpm turbo run build --filter=@budgie/web..."
+publish = ".next"
+
+[build.environment]
+NODE_VERSION = "22"
+PNPM_FLAGS = "--frozen-lockfile"
