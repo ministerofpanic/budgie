@@ -23,6 +23,7 @@ const errorMessage = {
   "amount-required": "Enter an outflow or an inflow.",
   "splits-dont-match-total": "Splits must add up to the total.",
   "category-required": "Choose a category, or split across several.",
+  "reconciled-locked": "This transaction is reconciled and locked - it can't be edited.",
 } as const;
 
 const SplitRowFields = ({

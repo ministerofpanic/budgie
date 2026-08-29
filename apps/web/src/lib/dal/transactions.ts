@@ -24,6 +24,7 @@ export type TransactionRow = {
   readonly memo: string | null;
   readonly amountPence: number;
   readonly cleared: boolean;
+  readonly reconciled: boolean;
   readonly runningBalance: number;
   readonly splits: readonly TransactionSplitRow[];
 };
@@ -79,6 +80,7 @@ export const listForAccount = async (rawAccountId: string): Promise<readonly Tra
       memo: transaction.memo,
       amountPence: transaction.amountPence,
       cleared: transaction.cleared,
+      reconciled: transaction.reconciled,
       runningBalance,
       splits: splitsByTransaction.get(transaction.id) ?? [],
     });
@@ -118,7 +120,8 @@ export type TransactionInputError =
   | { readonly kind: "invalid-amount" }
   | { readonly kind: "amount-required" }
   | { readonly kind: "splits-dont-match-total" }
-  | { readonly kind: "category-required" };
+  | { readonly kind: "category-required" }
+  | { readonly kind: "reconciled-locked" };
 
 const resolveAmount = (
   input: Pick<TransactionInput, "outflowInput" | "inflowInput">,
@@ -208,6 +211,7 @@ export const updateTransaction = async (
     where: and(eq(schema.transaction.id, id), eq(schema.transaction.budgetId, budgetId)),
   });
   if (!existing) throw new Error(`No transaction ${id} in this budget`);
+  if (existing.reconciled) return err({ kind: "reconciled-locked" });
 
   const input = transactionInputSchema.parse(raw);
   const account = await getAccount(input.accountId);
@@ -260,7 +264,13 @@ export const setTransactionCleared = async (
   await db
     .update(schema.transaction)
     .set({ cleared })
-    .where(and(inArray(schema.transaction.id, ids), eq(schema.transaction.budgetId, budgetId)));
+    .where(
+      and(
+        inArray(schema.transaction.id, ids),
+        eq(schema.transaction.budgetId, budgetId),
+        eq(schema.transaction.reconciled, false),
+      ),
+    );
 };
 
 export const deleteTransactions = async (rawIds: readonly string[]): Promise<void> => {
@@ -269,5 +279,11 @@ export const deleteTransactions = async (rawIds: readonly string[]): Promise<voi
   if (ids.length === 0) return;
   await db
     .delete(schema.transaction)
-    .where(and(inArray(schema.transaction.id, ids), eq(schema.transaction.budgetId, budgetId)));
+    .where(
+      and(
+        inArray(schema.transaction.id, ids),
+        eq(schema.transaction.budgetId, budgetId),
+        eq(schema.transaction.reconciled, false),
+      ),
+    );
 };

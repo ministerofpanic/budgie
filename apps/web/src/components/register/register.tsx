@@ -12,6 +12,7 @@ import {
 } from "@/lib/actions/budget-actions";
 import { Button } from "@/components/ui/button";
 import { TransactionForm } from "@/components/register/transaction-form";
+import { ReconcileForm } from "@/components/register/reconcile-form";
 
 const money = (pence: number) => format(unsafePence(pence));
 
@@ -37,7 +38,9 @@ const TransactionListRow = ({
     startTransition(() => setTransactionClearedAction([transaction.id], !transaction.cleared));
   }, [transaction.id, transaction.cleared]);
 
-  const startEditing = useCallback(() => setEditing(true), []);
+  const startEditing = useCallback(() => {
+    if (!transaction.reconciled) setEditing(true);
+  }, [transaction.reconciled]);
   const stopEditing = useCallback(() => setEditing(false), []);
   const handleToggleSelected = useCallback(
     () => onToggleSelected(transaction.id),
@@ -56,13 +59,19 @@ const TransactionListRow = ({
   }
 
   const categoryLabel =
-    transaction.splits.length > 0
+    (transaction.splits.length > 0
       ? `Split (${String(transaction.splits.length)})`
-      : (transaction.categoryName ?? "Uncategorised");
+      : (transaction.categoryName ?? "Uncategorised")) +
+    (transaction.reconciled ? " · 🔒 reconciled" : "");
 
   return (
     <div className="flex items-center gap-2 border-b py-2 text-sm">
-      <input type="checkbox" checked={selected} onChange={handleToggleSelected} />
+      <input
+        type="checkbox"
+        checked={selected}
+        disabled={transaction.reconciled}
+        onChange={handleToggleSelected}
+      />
       <button
         type="button"
         className="grid flex-1 grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-0.5 text-left"
@@ -79,7 +88,7 @@ const TransactionListRow = ({
       <button
         type="button"
         aria-label={transaction.cleared ? "Mark uncleared" : "Mark cleared"}
-        disabled={pending}
+        disabled={pending || transaction.reconciled}
         onClick={toggleCleared}
         className={`size-5 shrink-0 rounded border text-xs ${
           transaction.cleared ? "bg-primary text-primary-foreground" : ""
@@ -104,6 +113,7 @@ const Register = ({
 }) => {
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showReconcile, setShowReconcile] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const toggleSelected = useCallback((id: string) => {
@@ -138,6 +148,8 @@ const Register = ({
 
   const toggleAddForm = useCallback(() => setShowAddForm((value) => !value), []);
   const closeAddForm = useCallback(() => setShowAddForm(false), []);
+  const toggleReconcile = useCallback(() => setShowReconcile((value) => !value), []);
+  const closeReconcile = useCallback(() => setShowReconcile(false), []);
 
   return (
     <>
@@ -148,6 +160,9 @@ const Register = ({
             <Link href="/budget" className="underline">
               Budget
             </Link>
+            <Link href={`/accounts/${account.id}/import`} className="underline">
+              Import
+            </Link>
             {accounts
               .filter((other) => other.id !== account.id)
               .map((other) => (
@@ -157,10 +172,17 @@ const Register = ({
               ))}
           </nav>
         </div>
-        <Button type="button" size="sm" onClick={toggleAddForm}>
-          {showAddForm ? "Close" : "Add transaction"}
-        </Button>
+        <div className="flex gap-2">
+          <Button type="button" size="sm" variant="outline" onClick={toggleReconcile}>
+            {showReconcile ? "Close" : "Reconcile"}
+          </Button>
+          <Button type="button" size="sm" onClick={toggleAddForm}>
+            {showAddForm ? "Close" : "Add transaction"}
+          </Button>
+        </div>
       </header>
+
+      {showReconcile ? <ReconcileForm accountId={account.id} onDone={closeReconcile} /> : null}
 
       {showAddForm ? (
         <TransactionForm

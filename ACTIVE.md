@@ -4,15 +4,14 @@ One item at a time. Finish it completely before pulling the next from `BACKLOG.m
 
 ---
 
-## Phase 06 - CSV import and reconcile
+## Phase 07 - Targets, reports, scheduled transactions
 
-- Upload, sniff delimiter and date format, map columns, remember the mapping per
-  account for next time.
-- Duplicate detection by import hash (date + amount + payee + account) with the
-  unique partial index as the backstop.
-- Preview screen showing what will be created, what looks like a duplicate, and
-  what could not be parsed. Commit or discard as a batch; undo a whole batch.
-- Reconciliation: enter the real-world balance, tick off cleared transactions,
-  create an adjustment transaction for any difference, lock reconciled rows.
+- Target types: monthly, by-date, refill up to, spending cap. Progress and
+  "underfunded this month" surfaced on the budget grid.
+- Reports: spending by category over a period, income vs expenditure, net worth
+  over time. Figures must reconcile exactly against the ledger.
+- Scheduled transactions: frequency rules, upcoming list, auto-entry on the due
+  date, skip and edit-this-occurrence.
 
-**Done when** the same real bank CSV imports twice and produces no duplicates.
+**Done when** a scheduled transaction enters itself on its due date and every
+report ties back to the transactions it claims to summarise.
