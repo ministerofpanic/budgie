@@ -1,5 +1,12 @@
 export { computeMonth } from "./engine";
-export { compareMonths, monthOf, monthRange, previousMonth, type MonthKey } from "./month";
+export {
+  compareMonths,
+  monthOf,
+  monthRange,
+  nextMonth,
+  previousMonth,
+  type MonthKey,
+} from "./month";
 export type {
   AccountId,
   AccountInput,

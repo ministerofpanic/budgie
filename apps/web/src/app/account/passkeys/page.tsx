@@ -3,14 +3,17 @@ import { listPasskeys } from "@/lib/passkeys";
 import { PasskeyManager } from "@/components/auth/passkey-manager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+// A stable reference rather than an inline `[]` fallback, so the array
+// passed to PasskeyManager is never a fresh literal.
+const NO_PASSKEYS: readonly Awaited<ReturnType<typeof listPasskeys>>[number][] = [];
+
 const PasskeysPage = async ({
   searchParams,
 }: {
   readonly searchParams: Promise<{ readonly welcome?: string }>;
 }) => {
   const session = await requireSession();
-  // eslint-disable-next-line react-perf/jsx-no-new-array-as-prop -- server component, never re-renders
-  const passkeys = (await listPasskeys()) ?? [];
+  const passkeys = (await listPasskeys()) ?? NO_PASSKEYS;
   const { welcome } = await searchParams;
 
   return (

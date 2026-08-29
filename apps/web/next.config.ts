@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const config: NextConfig = {
   reactStrictMode: true,
-  transpilePackages: ["@budgie/core", "@budgie/db"],
+  transpilePackages: ["@budgie/budget", "@budgie/core", "@budgie/db"],
   typedRoutes: true,
 };
 

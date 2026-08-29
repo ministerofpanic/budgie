@@ -45,7 +45,7 @@ pnpm typecheck && pnpm test && pnpm build` all green, and checked against the
 | ----------------- | ------------------------------------------------------ |
 | `apps/web`        | Next.js App Router app - the only deployable           |
 | `packages/core`   | Result + money primitives, pure and dependency-free    |
-| `packages/db`     | (not yet) Drizzle schema and client                    |
+| `packages/db`     | Drizzle schema and client                              |
 | `packages/budget` | pure budget engine (Ready to Assign, rollover), no I/O |
 
 Internal packages are consumed as TypeScript source (no build step), so

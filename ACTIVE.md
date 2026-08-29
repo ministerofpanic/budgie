@@ -4,16 +4,15 @@ One item at a time. Finish it completely before pulling the next from `BACKLOG.m
 
 ---
 
-## Phase 05 - Budget and register UI
+## Phase 06 - CSV import and reconcile
 
-- Monthly budget grid: group / category / assigned / activity / available, month
-  navigation, inline assign with keyboard entry.
-- Ready to Assign header that is honest about being negative.
-- Account register: date, payee, category, memo, outflow, inflow, cleared,
-  running balance. Inline edit, multi-select, split transactions.
-- Category and group management: create, rename, reorder, hide, delete with
-  reassignment.
-- Mobile first. The budget grid and the register both have to be usable on a
-  phone with no mouse - that is the point of the whole thing.
+- Upload, sniff delimiter and date format, map columns, remember the mapping per
+  account for next time.
+- Duplicate detection by import hash (date + amount + payee + account) with the
+  unique partial index as the backstop.
+- Preview screen showing what will be created, what looks like a duplicate, and
+  what could not be parsed. Commit or discard as a batch; undo a whole batch.
+- Reconciliation: enter the real-world balance, tick off cleared transactions,
+  create an adjustment transaction for any difference, lock reconciled rows.
 
-**Done when** a full month can be budgeted and spent on a phone.
+**Done when** the same real bank CSV imports twice and produces no duplicates.

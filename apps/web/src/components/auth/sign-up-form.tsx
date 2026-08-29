@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { authClient } from "@/lib/auth-client";
@@ -15,40 +15,43 @@ const SignUpForm = () => {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  // eslint-disable-next-line react-perf/jsx-no-new-function-as-prop
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError(null);
-    setPending(true);
+  const handleNameChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    setName(event.target.value);
+  }, []);
 
-    const { error: signUpError } = await authClient.passkey.addPasskey({
-      name: "First passkey",
-      context: JSON.stringify({ name, email }),
-      createSession: true,
-    });
+  const handleEmailChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(event.target.value);
+  }, []);
 
-    setPending(false);
+  const handleSubmit = useCallback(
+    async (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      setError(null);
+      setPending(true);
 
-    if (signUpError) {
-      setError(signUpError.message ?? "Could not create your account. Try again.");
-      return;
-    }
+      const { error: signUpError } = await authClient.passkey.addPasskey({
+        name: "First passkey",
+        context: JSON.stringify({ name, email }),
+        createSession: true,
+      });
 
-    router.push("/account/passkeys?welcome=1");
-  };
+      setPending(false);
+
+      if (signUpError) {
+        setError(signUpError.message ?? "Could not create your account. Try again.");
+        return;
+      }
+
+      router.push("/account/passkeys?welcome=1");
+    },
+    [name, email, router],
+  );
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <Label htmlFor="name">Name</Label>
-        <Input
-          id="name"
-          autoComplete="name"
-          required
-          value={name}
-          // eslint-disable-next-line react-perf/jsx-no-new-function-as-prop
-          onChange={(event) => setName(event.target.value)}
-        />
+        <Input id="name" autoComplete="name" required value={name} onChange={handleNameChange} />
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="email">Email</Label>
@@ -58,8 +61,7 @@ const SignUpForm = () => {
           autoComplete="email"
           required
           value={email}
-          // eslint-disable-next-line react-perf/jsx-no-new-function-as-prop
-          onChange={(event) => setEmail(event.target.value)}
+          onChange={handleEmailChange}
         />
       </div>
       {error ? <p className="text-destructive text-sm">{error}</p> : null}

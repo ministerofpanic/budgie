@@ -39,6 +39,8 @@ export const compareMonths = (a: MonthKey, b: MonthKey): number => toIndex(a) - 
 
 export const previousMonth = (month: MonthKey): MonthKey => fromIndex(toIndex(month) - 1);
 
+export const nextMonth = (month: MonthKey): MonthKey => fromIndex(toIndex(month) + 1);
+
 /** Every month from `from` through `to`, inclusive, ascending. */
 export const monthRange = (from: MonthKey, to: MonthKey): readonly MonthKey[] => {
   const start = toIndex(from);

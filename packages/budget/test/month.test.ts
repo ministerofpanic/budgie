@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareMonths, monthOf, monthRange, previousMonth } from "../src/month";
+import { compareMonths, monthOf, monthRange, nextMonth, previousMonth } from "../src/month";
 
 describe("monthOf", () => {
   it("takes the year-month prefix of an ISO date", () => {
@@ -24,6 +24,13 @@ describe("previousMonth", () => {
   it("steps back a month, including across a year boundary", () => {
     expect(previousMonth("2026-08")).toBe("2026-07");
     expect(previousMonth("2026-01")).toBe("2025-12");
+  });
+});
+
+describe("nextMonth", () => {
+  it("steps forward a month, including across a year boundary", () => {
+    expect(nextMonth("2026-08")).toBe("2026-09");
+    expect(nextMonth("2026-12")).toBe("2027-01");
   });
 });
 
