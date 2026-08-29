@@ -20,5 +20,19 @@
     "unicorn/prefer-node-protocol": "error",
     "react/react-in-jsx-scope": "off"
   },
-  "ignorePatterns": ["**/.next/**", "**/dist/**", "**/node_modules/**", "**/.turbo/**"]
+  "ignorePatterns": [
+    "**/.next/**",
+    "**/dist/**",
+    "**/node_modules/**",
+    "**/.turbo/**",
+    "packages/db/drizzle/**"
+  ],
+  "overrides": [
+    {
+      "files": ["**/seed.ts"],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ]
 }
