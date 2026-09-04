@@ -465,7 +465,7 @@ const CategoryRow = ({
   return (
     <div className="hover:bg-accent/40 -mx-2 rounded-lg px-2 py-2.5 transition-colors">
       <div className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-3">
-        <p className="truncate text-sm font-medium">{category.name}</p>
+        <p className="min-w-0 truncate text-sm font-medium">{category.name}</p>
         <AssignInput categoryId={category.id} month={month} initial={category.assigned} />
         <span className="tabular text-muted-foreground w-20 text-right text-sm">
           {money(category.activity)}

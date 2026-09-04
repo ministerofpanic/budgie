@@ -82,11 +82,13 @@ const TransactionListRow = ({
         onClick={startEditing}
       >
         <span className="text-muted-foreground tabular w-20">{transaction.date}</span>
-        <span className="truncate font-medium">{transaction.payeeName ?? "(No payee)"}</span>
+        <span className="min-w-0 truncate font-medium">
+          {transaction.payeeName ?? "(No payee)"}
+        </span>
         <span className="tabular w-20 text-right font-medium">
           {money(transaction.amountPence)}
         </span>
-        <span className="text-muted-foreground col-start-2 flex items-center gap-1.5 truncate text-xs">
+        <span className="text-muted-foreground col-start-2 flex min-w-0 items-center gap-1.5 truncate text-xs">
           {categoryLabel}
           {transaction.reconciled ? (
             <Badge variant="secondary" className="gap-1 text-[10px]">
