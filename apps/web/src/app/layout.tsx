@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { GeistMono } from "geist/font/mono";
+import { GeistSans } from "geist/font/sans";
 
 import "./globals.css";
 
@@ -29,7 +31,11 @@ const themeScript = `
 `;
 
 const RootLayout = ({ children }: { readonly children: React.ReactNode }) => (
-  <html lang="en-GB" suppressHydrationWarning>
+  <html
+    lang="en-GB"
+    suppressHydrationWarning
+    className={`${GeistSans.variable} ${GeistMono.variable}`}
+  >
     <head>
       <script dangerouslySetInnerHTML={{ __html: themeScript }} />
     </head>
