@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { db, schema } from "@budgie/db";
 import { eq, inArray } from "drizzle-orm";
@@ -130,15 +131,12 @@ const resolveActiveMembership = async (userId: string) => {
 };
 
 /**
- * Resolves the signed-in user's active budget and membership role, creating
- * a budget on first use. Every other DAL function takes the resolved
- * `budgetId` as given rather than trusting one a caller supplies - the
- * membership lookup here is the one place that's ever established.
- *
- * Pass `minRole` to gate a mutation: a member with too low a role throws
- * rather than the caller silently trusting the UI to have hidden the button.
+ * The membership + budget-row resolution, cached per request regardless of
+ * which `minRole` a caller asks `requireBudget` for - every DAL function
+ * calls `requireBudget` independently, and without this every one of them
+ * would repeat the same session, membership and budget lookups.
  */
-export const requireBudget = async (minRole: BudgetRole = "viewer"): Promise<BudgetContext> => {
+const resolveBudgetContext = cache(async (): Promise<BudgetContext> => {
   const session = await requireSession();
   const userId = session.user.id;
 
@@ -151,12 +149,27 @@ export const requireBudget = async (minRole: BudgetRole = "viewer"): Promise<Bud
         role: "owner" as const,
       };
 
-  if (roleRank[role] < roleRank[minRole]) {
-    throw new Error(`This action needs ${minRole} access; you have ${role} access.`);
-  }
-
   const budget = await db.query.budget.findFirst({ where: eq(schema.budget.id, budgetId) });
   if (!budget) throw new Error(`No budget ${budgetId} found`);
 
   return { budgetId, userId, role, firstMonth: budget.firstMonth, currency: budget.currency };
+});
+
+/**
+ * Resolves the signed-in user's active budget and membership role, creating
+ * a budget on first use. Every other DAL function takes the resolved
+ * `budgetId` as given rather than trusting one a caller supplies - the
+ * membership lookup here is the one place that's ever established.
+ *
+ * Pass `minRole` to gate a mutation: a member with too low a role throws
+ * rather than the caller silently trusting the UI to have hidden the button.
+ */
+export const requireBudget = async (minRole: BudgetRole = "viewer"): Promise<BudgetContext> => {
+  const context = await resolveBudgetContext();
+
+  if (roleRank[context.role] < roleRank[minRole]) {
+    throw new Error(`This action needs ${minRole} access; you have ${context.role} access.`);
+  }
+
+  return context;
 };

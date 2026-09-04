@@ -166,14 +166,14 @@ const Register = ({
 
   return (
     <>
-      <header className="flex items-center justify-between gap-2">
+      <header className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-xl font-semibold">{account.name}</p>
           <Badge variant="secondary" className="mt-1 capitalize">
             {account.type}
           </Badge>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button asChild type="button" size="sm" variant="outline">
             <Link href={`/accounts/${account.id}/import`}>
               <Upload className="size-3.5" />

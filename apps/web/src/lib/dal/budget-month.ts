@@ -126,11 +126,18 @@ const loadBudgetInput = async (budgetId: string, firstMonth: MonthKey): Promise<
 export const getBudgetMonth = async (month: MonthKey): Promise<BudgetMonthView> => {
   const { budgetId, firstMonth } = await requireBudget();
   const budgetFirstMonth = toMonthKey(firstMonth);
-  const input = await loadBudgetInput(budgetId, budgetFirstMonth);
+
+  // Independent of each other - loading them together rather than the
+  // category/target lookups only starting once the budget input has already
+  // come back saves a full round trip on every budget-page render.
+  const [input, groups, targets] = await Promise.all([
+    loadBudgetInput(budgetId, budgetFirstMonth),
+    listCategoryGroups(),
+    listTargets(budgetId),
+  ]);
   const result: MonthResult = computeMonth(input, month);
 
   const resultByCategory = new Map(result.categories.map((row) => [row.categoryId, row]));
-  const [groups, targets] = await Promise.all([listCategoryGroups(), listTargets(budgetId)]);
 
   const view: BudgetMonthGroup[] = groups
     .filter((group) => !group.isSystem)
