@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 import {
   Bird,
   ChevronDown,
@@ -10,6 +10,7 @@ import {
   Landmark,
   LayoutGrid,
   PieChart,
+  Plus,
   Repeat,
   Users,
 } from "lucide-react";
@@ -22,8 +23,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { NewAccountDialog } from "@/components/accounts/new-account-dialog";
 import {
   Select,
   SelectContent,
@@ -69,29 +72,42 @@ const AccountsMenu = ({
 }: {
   readonly accounts: readonly AccountRow[];
   readonly active: boolean;
-}) => (
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <Button
-        variant="ghost"
-        size="sm"
-        className={`gap-1.5 rounded-full ${active ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" : "text-muted-foreground"}`}
-        aria-label="Accounts"
-      >
-        <Landmark className="size-4" />
-        <span className="hidden sm:inline">Accounts</span>
-        <ChevronDown className="size-3.5" />
-      </Button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="start">
-      {accounts.map((account) => (
-        <DropdownMenuItem key={account.id} asChild>
-          <Link href={`/accounts/${account.id}`}>{account.name}</Link>
-        </DropdownMenuItem>
-      ))}
-    </DropdownMenuContent>
-  </DropdownMenu>
-);
+}) => {
+  const [newAccountOpen, setNewAccountOpen] = useState(false);
+  const openNewAccount = useCallback(() => setNewAccountOpen(true), []);
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`gap-1.5 rounded-full ${active ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" : "text-muted-foreground"}`}
+            aria-label="Accounts"
+          >
+            <Landmark className="size-4" />
+            <span className="hidden sm:inline">Accounts</span>
+            <ChevronDown className="size-3.5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          {accounts.map((account) => (
+            <DropdownMenuItem key={account.id} asChild>
+              <Link href={`/accounts/${account.id}`}>{account.name}</Link>
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={openNewAccount}>
+            <Plus className="size-4" />
+            New account
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <NewAccountDialog open={newAccountOpen} onOpenChange={setNewAccountOpen} />
+    </>
+  );
+};
 
 const BudgetSwitcher = ({
   memberships,

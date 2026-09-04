@@ -6,8 +6,15 @@ import * as categories from "@/lib/dal/categories";
 import * as assignments from "@/lib/dal/assignments";
 import * as transactions from "@/lib/dal/transactions";
 import * as targets from "@/lib/dal/targets";
+import * as accounts from "@/lib/dal/accounts";
 import type { Result } from "@budgie/core/result";
 import type { Pence } from "@budgie/core/money";
+
+export const createAccountAction = async (name: string, type: unknown) => {
+  const account = await accounts.createAccount(name, type);
+  revalidatePath("/", "layout");
+  return account;
+};
 
 export const assignCategoryAction = async (
   categoryId: string,

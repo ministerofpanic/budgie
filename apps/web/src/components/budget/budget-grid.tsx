@@ -528,7 +528,7 @@ const CategoryGroupSection = ({
 );
 
 const ColumnHeaders = () => (
-  <div className="text-muted-foreground grid grid-cols-[1fr_auto_auto_auto_auto] gap-3 px-2 text-xs font-medium tracking-wide uppercase">
+  <div className="text-muted-foreground grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-3 text-xs font-medium tracking-wide uppercase">
     <span>Category</span>
     <span className="w-24 text-right">Assigned</span>
     <span className="w-20 text-right">Activity</span>
