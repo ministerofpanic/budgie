@@ -116,7 +116,7 @@ const PasskeyManager = ({ initialPasskeys }: { readonly initialPasskeys: Passkey
           />
         ))}
       </ul>
-      <Button type="button" onClick={handleAddPasskey} disabled={pending}>
+      <Button type="button" onClick={handleAddPasskey} loading={pending}>
         Add another passkey
       </Button>
     </div>

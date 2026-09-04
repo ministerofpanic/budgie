@@ -1,5 +1,7 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
+
 import { cache } from "react";
 import { cookies } from "next/headers";
 import { db, schema } from "@budgie/db";
@@ -27,41 +29,72 @@ const currentMonthStart = (): string => {
 };
 
 /**
+ * A stable, deterministic id for "this user's own default budget" - not
+ * randomly generated, so two concurrent requests racing to create it
+ * (Next.js prefetches every header nav link in the background, which can
+ * genuinely race the main page's own request for a user who has no budget
+ * yet) both attempt to insert the *same* row rather than two different
+ * budgets. Combined with `onConflictDoNothing` below, exactly one insert
+ * wins and both requests end up resolving the same budget.
+ */
+const defaultBudgetId = (userId: string): string => {
+  const hash = createHash("sha256").update(`default-budget:${userId}`).digest("hex");
+  return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
+};
+
+/**
  * Every signed-in user gets exactly one budget of their own, created lazily
  * on first use so sign-up doesn't need a separate onboarding step. Sharing
  * (phase 08) adds further budgets via membership on top of this - a user's
  * own budget is never replaced by joining someone else's.
  */
 const createDefaultBudget = async (userId: string, userName: string) => {
-  const [budget] = await db
+  const budgetId = defaultBudgetId(userId);
+
+  const [created] = await db
     .insert(schema.budget)
-    .values({ name: `${userName}'s Budget`, currency: "GBP", firstMonth: currentMonthStart() })
+    .values({
+      id: budgetId,
+      name: `${userName}'s Budget`,
+      currency: "GBP",
+      firstMonth: currentMonthStart(),
+    })
+    .onConflictDoNothing()
     .returning();
-  if (!budget) throw new Error("Failed to create budget");
 
-  await db.insert(schema.budgetMember).values({ budgetId: budget.id, userId, role: "owner" });
+  // A concurrent request already won the race and created this budget - it
+  // also owns creating the default account/categories below, so there's
+  // nothing left for this request to do but read back what it made.
+  if (!created) {
+    const existing = await db.query.budget.findFirst({ where: eq(schema.budget.id, budgetId) });
+    if (!existing) throw new Error(`Lost the race to create budget ${budgetId} but it's missing`);
+    return existing;
+  }
 
-  const [current] = await db
+  await db
+    .insert(schema.budgetMember)
+    .values({ budgetId, userId, role: "owner" })
+    .onConflictDoNothing();
+
+  await db
     .insert(schema.account)
-    .values({ budgetId: budget.id, name: "Current Account", type: "current", sortOrder: 0 })
-    .returning();
-  if (!current) throw new Error("Failed to create default account");
+    .values({ budgetId, name: "Current Account", type: "current", sortOrder: 0 });
 
   const [systemGroup] = await db
     .insert(schema.categoryGroup)
-    .values({ budgetId: budget.id, name: "Internal", isSystem: true, sortOrder: 0 })
+    .values({ budgetId, name: "Internal", isSystem: true, sortOrder: 0 })
     .returning();
   if (!systemGroup) throw new Error("Failed to create system category group");
 
   await db.insert(schema.category).values({
-    budgetId: budget.id,
+    budgetId,
     groupId: systemGroup.id,
     name: "Inflow: Ready to Assign",
     sortOrder: 0,
     isInflow: true,
   });
 
-  return budget;
+  return created;
 };
 
 export type MembershipRow = {

@@ -32,7 +32,7 @@ test("a full month can be budgeted and spent", async ({ page }) => {
   // A brand new account gets a default budget with one account and an
   // Inflow category, created lazily on first visit to the grid.
   await page.goto("/budget");
-  await expect(page.getByText("Ready to assign")).toBeVisible();
+  await expect(page.getByText("Ready to assign", { exact: true })).toBeVisible();
 
   await page.getByPlaceholder("New group").fill("Everyday");
   await page.getByRole("button", { name: "Add group" }).click();

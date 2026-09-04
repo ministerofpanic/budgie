@@ -147,6 +147,7 @@ const TargetEditor = ({
   const [dueDate, setDueDate] = useState(target?.kind === "by-date" ? target.dueDate : "");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [activeAction, setActiveAction] = useState<"save" | "clear" | null>(null);
 
   const handleKindChange = useCallback((value: string) => setKind(value as Target["kind"]), []);
   const handleAmountChange = useCallback(
@@ -159,6 +160,7 @@ const TargetEditor = ({
   );
 
   const handleSave = useCallback(() => {
+    setActiveAction("save");
     startTransition(async () => {
       const input = kind === "by-date" ? { kind, amount, dueDate } : { kind, amount };
       const result = await setTargetAction(categoryId, input);
@@ -167,6 +169,7 @@ const TargetEditor = ({
   }, [categoryId, kind, amount, dueDate]);
 
   const handleClear = useCallback(() => {
+    setActiveAction("clear");
     startTransition(() => deleteTargetAction(categoryId));
   }, [categoryId]);
 
@@ -201,11 +204,24 @@ const TargetEditor = ({
             onChange={handleDueDateChange}
           />
         ) : null}
-        <Button type="button" size="sm" disabled={pending || !amount} onClick={handleSave}>
+        <Button
+          type="button"
+          size="sm"
+          disabled={pending || !amount}
+          loading={pending && activeAction === "save"}
+          onClick={handleSave}
+        >
           Save
         </Button>
         {target ? (
-          <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={handleClear}>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            disabled={pending}
+            loading={pending && activeAction === "clear"}
+            onClick={handleClear}
+          >
             Clear
           </Button>
         ) : null}
@@ -234,15 +250,18 @@ const CategoryEditPanel = ({
   const [name, setName] = useState(currentName);
   const [reassignTo, setReassignTo] = useState(reassignOptions[0]?.id ?? "");
   const [pending, startTransition] = useTransition();
+  const [activeAction, setActiveAction] = useState<"rename" | "delete" | null>(null);
 
   const handleNameChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => setName(event.target.value),
     [],
   );
   const handleRename = useCallback(() => {
+    setActiveAction("rename");
     startTransition(() => renameCategoryAction(categoryId, name));
   }, [categoryId, name]);
   const handleDelete = useCallback(() => {
+    setActiveAction("delete");
     startTransition(() => deleteCategoryAction(categoryId, reassignTo));
   }, [categoryId, reassignTo]);
 
@@ -252,7 +271,13 @@ const CategoryEditPanel = ({
         <p className="text-xs font-medium">Name</p>
         <div className="flex gap-2">
           <Input className="bg-background h-8" value={name} onChange={handleNameChange} />
-          <Button type="button" size="sm" disabled={pending} onClick={handleRename}>
+          <Button
+            type="button"
+            size="sm"
+            disabled={pending}
+            loading={pending && activeAction === "rename"}
+            onClick={handleRename}
+          >
             Rename
           </Button>
         </div>
@@ -281,6 +306,7 @@ const CategoryEditPanel = ({
               size="sm"
               variant="destructive"
               disabled={pending || !reassignTo}
+              loading={pending && activeAction === "delete"}
               onClick={handleDelete}
             >
               Delete
@@ -321,7 +347,7 @@ const CategoryRowMenu = ({
           variant="ghost"
           size="icon"
           className="text-muted-foreground size-7"
-          disabled={pending}
+          loading={pending}
         >
           <MoreHorizontal className="size-4" />
         </Button>
@@ -365,7 +391,7 @@ const AddCategoryForm = ({ groupId }: { readonly groupId: string }) => {
         value={name}
         onChange={handleNameChange}
       />
-      <Button type="submit" size="sm" variant="outline" disabled={pending || !name.trim()}>
+      <Button type="submit" size="sm" variant="outline" disabled={!name.trim()} loading={pending}>
         <Plus className="size-3.5" />
         Add
       </Button>
@@ -401,7 +427,7 @@ const AddGroupForm = () => {
         value={name}
         onChange={handleNameChange}
       />
-      <Button type="submit" variant="outline" disabled={pending || !name.trim()}>
+      <Button type="submit" variant="outline" disabled={!name.trim()} loading={pending}>
         <Plus className="size-4" />
         Add group
       </Button>
@@ -583,10 +609,52 @@ const ReadyToAssignCard = ({ readyToAssign }: { readonly readyToAssign: number }
         >
           {money(readyToAssign)}
         </p>
+        <p className="text-muted-foreground mt-0.5 text-xs">
+          {positive
+            ? "Income you haven't put toward a category yet - assign it below."
+            : "You've assigned more than you have - pull back a category until this reads £0.00."}
+        </p>
       </div>
     </div>
   );
 };
+
+const GettingStarted = () => (
+  <div className="bg-card flex flex-col gap-4 rounded-xl border p-5 shadow-sm">
+    <div>
+      <p className="text-sm font-semibold">Nothing budgeted yet</p>
+      <p className="text-muted-foreground text-sm">Three things to do before this feels useful:</p>
+    </div>
+    <ol className="flex flex-col gap-3 text-sm">
+      <li className="flex items-start gap-3">
+        <span className="bg-muted text-muted-foreground flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-medium">
+          1
+        </span>
+        <span>
+          Record your income in an account, categorised as <strong>Inflow</strong> - that's what
+          fills Ready to assign above.
+        </span>
+      </li>
+      <li className="flex items-start gap-3">
+        <span className="bg-muted text-muted-foreground flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-medium">
+          2
+        </span>
+        <span>
+          Add a group and a category or two below - <em>Bills</em>, <em>Groceries</em>, whatever you
+          actually spend on.
+        </span>
+      </li>
+      <li className="flex items-start gap-3">
+        <span className="bg-muted text-muted-foreground flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-medium">
+          3
+        </span>
+        <span>
+          Assign money to each category until Ready to assign reads £0.00 - every pound has a job.
+        </span>
+      </li>
+    </ol>
+  </div>
+);
 
 const BudgetGrid = ({ view }: { readonly view: BudgetMonthView }) => {
   const router = useRouter();
@@ -616,8 +684,10 @@ const BudgetGrid = ({ view }: { readonly view: BudgetMonthView }) => {
 
       <ReadyToAssignCard readyToAssign={view.readyToAssign} />
 
+      {view.groups.length === 0 ? <GettingStarted /> : null}
+
       <section className="flex flex-col gap-5">
-        <ColumnHeaders />
+        {view.groups.length > 0 ? <ColumnHeaders /> : null}
         {view.groups.map((group) => (
           <CategoryGroupSection
             key={group.id}

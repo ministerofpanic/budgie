@@ -55,7 +55,7 @@ test("an editor can mutate the shared budget but cannot manage members", async (
   await expect(editorPage.getByText("Everyday")).toBeVisible();
 
   await editorPage.goto("/sharing");
-  await expect(editorPage.getByText("Owner User")).toBeVisible();
+  await expect(editorPage.getByText("Owner User", { exact: true })).toBeVisible();
   await expect(editorPage.getByRole("button", { name: "Remove" })).toHaveCount(0);
   await expect(editorPage.getByRole("button", { name: "Create invite link" })).toHaveCount(0);
 

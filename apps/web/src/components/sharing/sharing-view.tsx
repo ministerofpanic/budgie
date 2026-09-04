@@ -103,7 +103,7 @@ const MemberRowView = ({
               type="button"
               size="sm"
               variant="destructive"
-              disabled={pending}
+              loading={pending}
               onClick={handleRemove}
             >
               Remove
@@ -152,7 +152,7 @@ const InviteForm = () => {
             <SelectItem value="viewer">Viewer</SelectItem>
           </SelectContent>
         </Select>
-        <Button type="button" disabled={pending} onClick={handleCreate}>
+        <Button type="button" loading={pending} onClick={handleCreate}>
           <Link2 className="size-4" />
           Create invite link
         </Button>
@@ -183,7 +183,7 @@ const PendingInviteRowView = ({ invite }: { readonly invite: PendingInviteRow })
         <Badge variant={roleBadgeVariant[invite.role]}>{roleLabel[invite.role]}</Badge>
         <span className="text-muted-foreground">expires {invite.expiresAt.slice(0, 10)}</span>
       </span>
-      <Button type="button" size="sm" variant="outline" disabled={pending} onClick={handleRevoke}>
+      <Button type="button" size="sm" variant="outline" loading={pending} onClick={handleRevoke}>
         Revoke
       </Button>
     </div>

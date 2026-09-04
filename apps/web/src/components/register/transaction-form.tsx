@@ -308,7 +308,7 @@ const TransactionForm = ({
       {error ? <p className="text-destructive text-sm">{error}</p> : null}
 
       <div className="flex gap-2">
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" loading={pending}>
           {existing ? "Save" : "Add transaction"}
         </Button>
         {onDone ? (

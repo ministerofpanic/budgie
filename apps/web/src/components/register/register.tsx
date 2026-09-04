@@ -130,6 +130,7 @@ const Register = ({
   const [showAddForm, setShowAddForm] = useState(false);
   const [showReconcile, setShowReconcile] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [bulkAction, setBulkAction] = useState<"cleared" | "uncleared" | "delete" | null>(null);
 
   const toggleSelected = useCallback((id: string) => {
     setSelected((current) => {
@@ -141,6 +142,7 @@ const Register = ({
   }, []);
 
   const bulkDelete = useCallback(() => {
+    setBulkAction("delete");
     startTransition(async () => {
       await deleteTransactionsAction([...selected]);
       setSelected(new Set());
@@ -148,6 +150,7 @@ const Register = ({
   }, [selected]);
 
   const bulkMarkCleared = useCallback(() => {
+    setBulkAction("cleared");
     startTransition(async () => {
       await setTransactionClearedAction([...selected], true);
       setSelected(new Set());
@@ -155,6 +158,7 @@ const Register = ({
   }, [selected]);
 
   const bulkMarkUncleared = useCallback(() => {
+    setBulkAction("uncleared");
     startTransition(async () => {
       await setTransactionClearedAction([...selected], false);
       setSelected(new Set());
@@ -209,6 +213,7 @@ const Register = ({
             size="sm"
             variant="outline"
             disabled={pending}
+            loading={pending && bulkAction === "cleared"}
             onClick={bulkMarkCleared}
           >
             Mark cleared
@@ -218,6 +223,7 @@ const Register = ({
             size="sm"
             variant="outline"
             disabled={pending}
+            loading={pending && bulkAction === "uncleared"}
             onClick={bulkMarkUncleared}
           >
             Mark uncleared
@@ -227,6 +233,7 @@ const Register = ({
             size="sm"
             variant="destructive"
             disabled={pending}
+            loading={pending && bulkAction === "delete"}
             onClick={bulkDelete}
           >
             Delete

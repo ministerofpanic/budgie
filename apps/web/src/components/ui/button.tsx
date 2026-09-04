@@ -1,5 +1,6 @@
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
+import { Loader2 } from "lucide-react";
 import type * as React from "react";
 
 import { cn } from "@/lib/utils";
@@ -29,16 +30,51 @@ const buttonVariants = cva(
 );
 
 type ButtonProps = React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & { readonly asChild?: boolean };
+  VariantProps<typeof buttonVariants> & {
+    readonly asChild?: boolean;
+    /** Shows a spinner and disables the button - the visual cue that was
+     * missing when a button just went `disabled` with no other change. */
+    readonly loading?: boolean;
+  };
 
-const Button = ({ className, variant, size, asChild = false, ...props }: ButtonProps) => {
-  const Comp = asChild ? Slot : "button";
+const Button = ({
+  className,
+  variant,
+  size,
+  asChild = false,
+  loading = false,
+  disabled,
+  children,
+  ...props
+}: ButtonProps) => {
+  // asChild renders via Radix Slot, which clones its one child element and
+  // requires there to be exactly one - it can't take the spinner as a
+  // sibling, even a `null` one. asChild is only ever used for navigation
+  // links anyway, never a pending action, so it skips the loading affordance
+  // entirely rather than trying to share this markup with the plain case.
+  if (asChild) {
+    return (
+      <Slot
+        data-slot="button"
+        className={cn(buttonVariants({ variant, size, className }))}
+        {...props}
+      >
+        {children}
+      </Slot>
+    );
+  }
+
   return (
-    <Comp
+    <button
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      disabled={disabled || loading}
+      aria-busy={loading}
       {...props}
-    />
+    >
+      {loading ? <Loader2 className="animate-spin" /> : null}
+      {children}
+    </button>
   );
 };
 

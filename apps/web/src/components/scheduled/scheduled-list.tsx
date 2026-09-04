@@ -41,6 +41,7 @@ const ScheduledRow = ({ row }: { readonly row: ScheduledTransactionRow }) => {
   const [date, setDate] = useState(row.nextDate);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [activeAction, setActiveAction] = useState<"enter" | "skip" | "delete" | null>(null);
 
   const handleAmountChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => setAmount(event.target.value),
@@ -53,6 +54,7 @@ const ScheduledRow = ({ row }: { readonly row: ScheduledTransactionRow }) => {
   const startEditing = useCallback(() => setEditing(true), []);
 
   const handleEnter = useCallback(() => {
+    setActiveAction("enter");
     startTransition(async () => {
       const result = await enterNextOccurrenceAction(row.id, undefined);
       setError(result.ok ? null : "Could not enter this transaction");
@@ -60,6 +62,7 @@ const ScheduledRow = ({ row }: { readonly row: ScheduledTransactionRow }) => {
   }, [row.id]);
 
   const handleEnterEdited = useCallback(() => {
+    setActiveAction("enter");
     startTransition(async () => {
       const outflow = row.amountPence < 0;
       const amountInput = outflow ? `-${amount}` : amount;
@@ -70,10 +73,12 @@ const ScheduledRow = ({ row }: { readonly row: ScheduledTransactionRow }) => {
   }, [row.id, row.amountPence, amount, date]);
 
   const handleSkip = useCallback(() => {
+    setActiveAction("skip");
     startTransition(() => skipNextOccurrenceAction(row.id));
   }, [row.id]);
 
   const handleDelete = useCallback(() => {
+    setActiveAction("delete");
     startTransition(() => deleteScheduledTransactionAction(row.id));
   }, [row.id]);
 
@@ -107,13 +112,26 @@ const ScheduledRow = ({ row }: { readonly row: ScheduledTransactionRow }) => {
         </span>
       </div>
       <div className="flex flex-wrap gap-2 pl-12">
-        <Button type="button" size="sm" disabled={pending} onClick={handleEnter}>
+        <Button
+          type="button"
+          size="sm"
+          disabled={pending}
+          loading={pending && activeAction === "enter"}
+          onClick={handleEnter}
+        >
           Enter now
         </Button>
         <Button type="button" size="sm" variant="outline" disabled={pending} onClick={startEditing}>
           Edit this occurrence
         </Button>
-        <Button type="button" size="sm" variant="outline" disabled={pending} onClick={handleSkip}>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={pending}
+          loading={pending && activeAction === "skip"}
+          onClick={handleSkip}
+        >
           Skip
         </Button>
         <Button
@@ -122,6 +140,7 @@ const ScheduledRow = ({ row }: { readonly row: ScheduledTransactionRow }) => {
           variant="ghost"
           className="text-destructive"
           disabled={pending}
+          loading={pending && activeAction === "delete"}
           onClick={handleDelete}
         >
           Delete
@@ -136,7 +155,12 @@ const ScheduledRow = ({ row }: { readonly row: ScheduledTransactionRow }) => {
             value={amount}
             onChange={handleAmountChange}
           />
-          <Button type="button" size="sm" disabled={pending} onClick={handleEnterEdited}>
+          <Button
+            type="button"
+            size="sm"
+            loading={pending && activeAction === "enter"}
+            onClick={handleEnterEdited}
+          >
             Enter edited occurrence
           </Button>
         </div>
@@ -277,7 +301,7 @@ const AddScheduledForm = ({
         </Select>
         <Input type="date" className="w-36" value={nextDate} onChange={handleNextDateChange} />
       </div>
-      <Button type="submit" disabled={pending || (!outflow && !inflow)}>
+      <Button type="submit" disabled={!outflow && !inflow} loading={pending}>
         <Plus className="size-4" />
         Add scheduled transaction
       </Button>

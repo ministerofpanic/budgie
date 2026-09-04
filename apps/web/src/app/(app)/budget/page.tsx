@@ -2,8 +2,6 @@ import { compareMonths } from "@budgie/budget";
 
 import { getBudgetMonth } from "@/lib/dal/budget-month";
 import { requireBudget } from "@/lib/dal/budget";
-import { getAppShellData } from "@/lib/dal/app-shell";
-import { AppHeader } from "@/components/app-header";
 import { BudgetGrid } from "@/components/budget/budget-grid";
 
 const currentMonthKey = (): string => {
@@ -27,19 +25,16 @@ const BudgetPage = async ({
   const budgetFirstMonth = firstMonth.slice(0, 7);
   const month = compareMonths(requested, budgetFirstMonth) < 0 ? budgetFirstMonth : requested;
 
-  const [view, shell] = await Promise.all([getBudgetMonth(month), getAppShellData()]);
+  const view = await getBudgetMonth(month);
 
   return (
     <>
-      <AppHeader {...shell} />
-      <main className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-6 sm:px-6">
-        {invite && inviteMessage[invite] ? (
-          <p className="bg-muted text-muted-foreground rounded-lg border px-4 py-3 text-sm">
-            {inviteMessage[invite]}
-          </p>
-        ) : null}
-        <BudgetGrid view={view} />
-      </main>
+      {invite && inviteMessage[invite] ? (
+        <p className="bg-muted text-muted-foreground rounded-lg border px-4 py-3 text-sm">
+          {inviteMessage[invite]}
+        </p>
+      ) : null}
+      <BudgetGrid view={view} />
     </>
   );
 };

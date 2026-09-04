@@ -91,7 +91,7 @@ const UndoBatchButton = ({ batchId }: { readonly batchId: string }) => {
   }, [batchId, router]);
 
   return (
-    <Button type="button" size="sm" variant="outline" disabled={pending} onClick={handleUndo}>
+    <Button type="button" size="sm" variant="outline" loading={pending} onClick={handleUndo}>
       Undo
     </Button>
   );
@@ -145,6 +145,7 @@ const ImportWizard = ({
   const [preview, setPreview] = useState<readonly PreviewRow[] | null>(null);
   const [commitResult, setCommitResult] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [activeAction, setActiveAction] = useState<"preview" | "commit" | null>(null);
 
   const handleFileChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -225,6 +226,7 @@ const ImportWizard = ({
   const handlePreview = useCallback(() => {
     const request = buildRequest();
     if (!request) return;
+    setActiveAction("preview");
     startTransition(async () => {
       const result = await previewImportAction(request);
       setPreview(result);
@@ -234,6 +236,7 @@ const ImportWizard = ({
   const handleCommit = useCallback(() => {
     const request = buildRequest();
     if (!request || !filename) return;
+    setActiveAction("commit");
     startTransition(async () => {
       const result = await commitImportAction(request, filename);
       setCommitResult(
@@ -368,6 +371,7 @@ const ImportWizard = ({
               type="button"
               variant="outline"
               disabled={pending || !mapping}
+              loading={pending && activeAction === "preview"}
               onClick={handlePreview}
             >
               Preview
@@ -375,6 +379,7 @@ const ImportWizard = ({
             <Button
               type="button"
               disabled={pending || !mapping || !summary || summary.create === 0}
+              loading={pending && activeAction === "commit"}
               onClick={handleCommit}
             >
               Import {summary ? summary.create : ""} transactions

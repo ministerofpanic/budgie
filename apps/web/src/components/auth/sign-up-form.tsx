@@ -65,7 +65,7 @@ const SignUpForm = () => {
         />
       </div>
       {error ? <p className="text-destructive text-sm">{error}</p> : null}
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" loading={pending}>
         {pending ? "Creating account..." : "Create account with a passkey"}
       </Button>
     </form>
