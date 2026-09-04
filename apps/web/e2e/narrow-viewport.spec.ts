@@ -49,7 +49,8 @@ test("the budget grid and register have no horizontal overflow on a narrow viewp
   }));
   expect(budgetOverflow.scrollWidth).toBeLessThanOrEqual(budgetOverflow.clientWidth);
 
-  await page.getByRole("link", { name: "Current Account" }).click();
+  await page.getByRole("button", { name: "Accounts" }).click();
+  await page.getByRole("menuitem", { name: "Current Account" }).click();
   await expect(page).toHaveURL(/\/accounts\//);
   const registerOverflow = await page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth,

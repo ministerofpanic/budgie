@@ -29,7 +29,8 @@ const signUpFreshUser = async (page: Page, name: string) => {
 test("reconciling creates an adjustment and locks cleared transactions", async ({ page }) => {
   await signUpFreshUser(page, "Reconcile User");
   await page.goto("/budget");
-  await page.getByRole("link", { name: "Current Account" }).click();
+  await page.getByRole("button", { name: "Accounts" }).click();
+  await page.getByRole("menuitem", { name: "Current Account" }).click();
 
   // Add a transaction and mark it cleared.
   await page.getByRole("button", { name: "Add transaction" }).click();

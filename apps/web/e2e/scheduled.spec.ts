@@ -57,7 +57,8 @@ test("a scheduled transaction auto-enters on its due date and advances", async (
   await expect(page.getByText("Landlord")).toBeVisible();
 
   await page.goto("/budget");
-  await page.getByRole("link", { name: "Current Account" }).click();
+  await page.getByRole("button", { name: "Accounts" }).click();
+  await page.getByRole("menuitem", { name: "Current Account" }).click();
   await expect(page.getByText("Landlord")).toBeVisible();
   await expect(page.getByText("-£900.00").first()).toBeVisible();
 });
@@ -87,6 +88,7 @@ test("skipping a scheduled transaction advances it without entering anything", a
   await expect(page.getByText(originalNextDate)).not.toBeVisible();
 
   await page.goto("/budget");
-  await page.getByRole("link", { name: "Current Account" }).click();
+  await page.getByRole("button", { name: "Accounts" }).click();
+  await page.getByRole("menuitem", { name: "Current Account" }).click();
   await expect(page.getByText("Gym membership")).not.toBeVisible();
 });

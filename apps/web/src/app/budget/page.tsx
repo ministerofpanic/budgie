@@ -3,6 +3,7 @@ import { compareMonths } from "@budgie/budget";
 import { getBudgetMonth } from "@/lib/dal/budget-month";
 import { listMemberships, requireBudget } from "@/lib/dal/budget";
 import { listAccounts } from "@/lib/dal/accounts";
+import { AppHeader } from "@/components/app-header";
 import { BudgetGrid } from "@/components/budget/budget-grid";
 
 const currentMonthKey = (): string => {
@@ -33,19 +34,17 @@ const BudgetPage = async ({
   ]);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-6 px-4 py-8 sm:px-6">
-      {invite && inviteMessage[invite] ? (
-        <p className="text-muted-foreground rounded-lg border p-3 text-sm">
-          {inviteMessage[invite]}
-        </p>
-      ) : null}
-      <BudgetGrid
-        view={view}
-        accounts={accounts}
-        memberships={memberships}
-        activeBudgetId={budgetId}
-      />
-    </main>
+    <>
+      <AppHeader accounts={accounts} memberships={memberships} activeBudgetId={budgetId} />
+      <main className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-6 sm:px-6">
+        {invite && inviteMessage[invite] ? (
+          <p className="bg-muted text-muted-foreground rounded-lg border px-4 py-3 text-sm">
+            {inviteMessage[invite]}
+          </p>
+        ) : null}
+        <BudgetGrid view={view} />
+      </main>
+    </>
   );
 };
 

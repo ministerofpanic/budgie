@@ -43,7 +43,8 @@ const uploadCsv = async (page: Page) => {
 test("the same CSV imports twice and produces no duplicates", async ({ page }) => {
   await signUpFreshUser(page, "Import User");
   await page.goto("/budget");
-  await page.getByRole("link", { name: "Current Account" }).click();
+  await page.getByRole("button", { name: "Accounts" }).click();
+  await page.getByRole("menuitem", { name: "Current Account" }).click();
   await page.getByRole("link", { name: "Import" }).click();
   await expect(page).toHaveURL(/\/import$/);
 
@@ -71,7 +72,8 @@ test("the same CSV imports twice and produces no duplicates", async ({ page }) =
 test("undoing an import batch removes the transactions it created", async ({ page }) => {
   await signUpFreshUser(page, "Undo User");
   await page.goto("/budget");
-  await page.getByRole("link", { name: "Current Account" }).click();
+  await page.getByRole("button", { name: "Accounts" }).click();
+  await page.getByRole("menuitem", { name: "Current Account" }).click();
   await page.getByRole("link", { name: "Import" }).click();
 
   await uploadCsv(page);

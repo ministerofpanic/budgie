@@ -38,7 +38,8 @@ test("reports reconcile with the transactions that produced them", async ({ page
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByText("Groceries")).toBeVisible();
 
-  await page.getByRole("link", { name: "Current Account" }).click();
+  await page.getByRole("button", { name: "Accounts" }).click();
+  await page.getByRole("menuitem", { name: "Current Account" }).click();
   await expect(page).toHaveURL(/\/accounts\//);
 
   await page.getByRole("button", { name: "Add transaction" }).click();

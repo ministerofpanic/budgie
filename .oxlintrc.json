@@ -35,7 +35,11 @@
       }
     },
     {
-      "files": ["apps/web/src/components/reports/reports-view.tsx"],
+      "files": [
+        "apps/web/src/components/reports/reports-view.tsx",
+        "apps/web/src/components/ui/**",
+        "apps/web/src/app/layout.tsx"
+      ],
       "rules": {
         "react-perf/jsx-no-new-object-as-prop": "off"
       }

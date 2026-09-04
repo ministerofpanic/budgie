@@ -48,7 +48,8 @@ test("a full month can be budgeted and spent", async ({ page }) => {
   await assignField.blur();
   await expect(page.getByText("£100.00", { exact: true })).toBeVisible();
 
-  await page.getByRole("link", { name: "Current Account" }).click();
+  await page.getByRole("button", { name: "Accounts" }).click();
+  await page.getByRole("menuitem", { name: "Current Account" }).click();
   await expect(page).toHaveURL(/\/accounts\//);
 
   await page.getByRole("button", { name: "Add transaction" }).click();

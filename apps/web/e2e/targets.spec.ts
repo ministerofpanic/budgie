@@ -39,18 +39,19 @@ test("a category target tracks underfunded and on-track state", async ({ page })
   await expect(page.getByText("Groceries")).toBeVisible();
 
   const groceriesRow = page.locator("p", { hasText: "Groceries" }).locator("../..");
-  await groceriesRow.getByText("Manage").click();
+  await groceriesRow.getByRole("button").last().click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
   await groceriesRow.getByPlaceholder("Amount").fill("50.00");
-  await groceriesRow.getByRole("button", { name: "Save target" }).click();
+  await groceriesRow.getByRole("button", { name: "Save" }).click();
 
-  await expect(groceriesRow.getByText("£50.00 underfunded")).toBeVisible();
+  await expect(groceriesRow.getByText("£50.00 to go")).toBeVisible();
 
   const assignField = groceriesRow.getByRole("textbox").first();
   await assignField.fill("50.00");
   await assignField.blur();
 
-  await expect(groceriesRow.getByText(/on track/)).toBeVisible();
+  await expect(groceriesRow.getByText(/on track/i)).toBeVisible();
 
   await groceriesRow.getByRole("button", { name: "Clear" }).click();
-  await expect(groceriesRow.getByText(/on track/)).not.toBeVisible();
+  await expect(groceriesRow.getByText(/on track/i)).not.toBeVisible();
 });
