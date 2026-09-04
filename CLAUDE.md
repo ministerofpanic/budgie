@@ -1,6 +1,6 @@
 # Budgie - working notes for Claude
 
-Self-hosted YNAB clone. Envelope budgeting, shared between people, passkey
+Self-hosted YNAB clone. Zero-based budgeting, shared between people, passkey
 sign-in, no payment or subscription features anywhere in the product.
 
 ## Workflow

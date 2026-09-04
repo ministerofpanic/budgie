@@ -1,7 +1,7 @@
 # Budgie
 
-Envelope budgeting you actually own. A self-hosted YNAB-style budget: zero-based
-envelopes, shared between people, passkey sign-in, no payment wall anywhere.
+Budgeting you actually own. A self-hosted YNAB-style budget: zero-based,
+shared between people, passkey sign-in, no payment wall anywhere.
 
 ## Layout
 

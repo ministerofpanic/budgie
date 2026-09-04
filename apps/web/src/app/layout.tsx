@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: { default: "Budgie", template: "%s · Budgie" },
-  description: "Envelope budgeting you actually own.",
+  description: "Give every pound a job, before you spend it.",
   applicationName: "Budgie",
   appleWebApp: { capable: true, title: "Budgie", statusBarStyle: "default" },
 };
