@@ -1,6 +1,9 @@
+import Link from "next/link";
+
 import { requireSession } from "@/lib/session";
 import { listPasskeys } from "@/lib/passkeys";
 import { PasskeyManager } from "@/components/auth/passkey-manager";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 // A stable reference rather than an inline `[]` fallback, so the array
@@ -23,12 +26,17 @@ const PasskeysPage = async ({
           <CardTitle>Your passkeys</CardTitle>
           <CardDescription>
             {welcome
-              ? `Welcome, ${session.user.name}. Add a second passkey now - losing your only one means losing the account.`
+              ? `Welcome, ${session.user.name}. A second passkey is optional, but worth adding - losing your only one means losing the account. You can always add one later from here.`
               : "Manage the passkeys signed in to this account."}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-4">
           <PasskeyManager initialPasskeys={passkeys} />
+          {welcome ? (
+            <Button asChild variant="outline">
+              <Link href="/budget">Continue to your budget</Link>
+            </Button>
+          ) : null}
         </CardContent>
       </Card>
     </main>
