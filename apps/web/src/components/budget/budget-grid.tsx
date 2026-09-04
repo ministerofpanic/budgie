@@ -4,19 +4,23 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState, useTransition } from "react";
 
-import { nextMonth, previousMonth } from "@budgie/budget";
+import { nextMonth, previousMonth, type Target } from "@budgie/budget";
 import { format, unsafePence } from "@budgie/core/money";
 import type { AccountRow } from "@/lib/dal/accounts";
+import type { MembershipRow } from "@/lib/dal/budget";
 import type { BudgetMonthView } from "@/lib/dal/budget-month";
+import { BudgetSwitcher } from "@/components/budget/budget-switcher";
 import {
   assignCategoryAction,
   createCategoryAction,
   createCategoryGroupAction,
   deleteCategoryAction,
+  deleteTargetAction,
   moveCategoryAction,
   renameCategoryAction,
   renameCategoryGroupAction,
   setCategoryHiddenAction,
+  setTargetAction,
 } from "@/lib/actions/budget-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,14 +74,122 @@ const AssignInput = ({
   );
 };
 
+const targetKindLabel: Record<Target["kind"], string> = {
+  monthly: "Assign monthly",
+  refill: "Refill up to",
+  "by-date": "Save by date",
+  spending: "Spending cap",
+};
+
+const TargetProgressBadge = ({
+  target,
+  underfundedPence,
+  met,
+}: {
+  readonly target: Target;
+  readonly underfundedPence: number;
+  readonly met: boolean;
+}) => {
+  if (met) {
+    return (
+      <span className="text-money-positive text-xs">
+        {targetKindLabel[target.kind]}: {money(target.amountPence)} · on track
+      </span>
+    );
+  }
+  return (
+    <span className="text-money-negative text-xs">
+      {target.kind === "spending"
+        ? `${money(underfundedPence)} over cap`
+        : `${money(underfundedPence)} underfunded`}
+    </span>
+  );
+};
+
+const TargetEditor = ({
+  categoryId,
+  target,
+}: {
+  readonly categoryId: string;
+  readonly target: Target | null;
+}) => {
+  const [kind, setKind] = useState<Target["kind"]>(target?.kind ?? "monthly");
+  const [amount, setAmount] = useState(() => (target ? (target.amountPence / 100).toFixed(2) : ""));
+  const [dueDate, setDueDate] = useState(target?.kind === "by-date" ? target.dueDate : "");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  const handleKindChange = useCallback(
+    (event: React.ChangeEvent<HTMLSelectElement>) => setKind(event.target.value as Target["kind"]),
+    [],
+  );
+  const handleAmountChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => setAmount(event.target.value),
+    [],
+  );
+  const handleDueDateChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => setDueDate(event.target.value),
+    [],
+  );
+
+  const handleSave = useCallback(() => {
+    startTransition(async () => {
+      const input = kind === "by-date" ? { kind, amount, dueDate } : { kind, amount };
+      const result = await setTargetAction(categoryId, input);
+      setError(result.ok ? null : "Not a valid target");
+    });
+  }, [categoryId, kind, amount, dueDate]);
+
+  const handleClear = useCallback(() => {
+    startTransition(() => deleteTargetAction(categoryId));
+  }, [categoryId]);
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 py-1">
+      <select
+        className="border-input h-8 rounded-md border bg-transparent px-2 text-sm"
+        value={kind}
+        onChange={handleKindChange}
+      >
+        {(Object.keys(targetKindLabel) as Target["kind"][]).map((option) => (
+          <option key={option} value={option}>
+            {targetKindLabel[option]}
+          </option>
+        ))}
+      </select>
+      <Input
+        inputMode="decimal"
+        placeholder="Amount"
+        className="h-8 w-24"
+        value={amount}
+        onChange={handleAmountChange}
+      />
+      {kind === "by-date" ? (
+        <Input type="date" className="h-8 w-36" value={dueDate} onChange={handleDueDateChange} />
+      ) : null}
+      <Button type="button" size="sm" disabled={pending || !amount} onClick={handleSave}>
+        Save target
+      </Button>
+      {target ? (
+        <Button type="button" size="sm" variant="outline" disabled={pending} onClick={handleClear}>
+          Clear
+        </Button>
+      ) : null}
+      {error ? <span className="text-destructive text-xs">{error}</span> : null}
+    </div>
+  );
+};
+
 const CategoryManagePanel = ({
   categoryId,
   currentName,
   allCategories,
+  target,
 }: {
   readonly categoryId: string;
   readonly currentName: string;
   readonly allCategories: readonly NamedOption[];
+  readonly target: Target | null;
 }) => {
   const reassignOptions = useMemo(
     () => allCategories.filter((other) => other.id !== categoryId),
@@ -122,6 +234,7 @@ const CategoryManagePanel = ({
             Rename
           </Button>
         </div>
+        <TargetEditor categoryId={categoryId} target={target} />
         <div className="flex gap-2">
           <Button
             type="button"
@@ -312,10 +425,18 @@ const CategoryGroupSection = ({
                 </span>
               </div>
             </div>
+            {category.target && category.targetProgress ? (
+              <TargetProgressBadge
+                target={category.target}
+                underfundedPence={category.targetProgress.underfundedPence}
+                met={category.targetProgress.met}
+              />
+            ) : null}
             <CategoryManagePanel
               categoryId={category.id}
               currentName={category.name}
               allCategories={allCategories}
+              target={category.target}
             />
           </div>
         ))}
@@ -327,9 +448,13 @@ const CategoryGroupSection = ({
 const BudgetGrid = ({
   view,
   accounts,
+  memberships,
+  activeBudgetId,
 }: {
   readonly view: BudgetMonthView;
   readonly accounts: readonly AccountRow[];
+  readonly memberships: readonly MembershipRow[];
+  readonly activeBudgetId: string;
 }) => {
   const router = useRouter();
   const allCategories = useMemo(
@@ -344,6 +469,7 @@ const BudgetGrid = ({
   return (
     <>
       <header className="flex flex-col gap-4">
+        <BudgetSwitcher memberships={memberships} activeBudgetId={activeBudgetId} />
         <div className="flex items-center justify-between">
           <Link href={`/budget?month=${previousMonth(view.month)}`} className="text-sm underline">
             &larr; Prev
@@ -371,6 +497,15 @@ const BudgetGrid = ({
             {account.name}
           </Link>
         ))}
+        <Link href="/reports" className="underline">
+          Reports
+        </Link>
+        <Link href="/scheduled" className="underline">
+          Scheduled
+        </Link>
+        <Link href="/sharing" className="underline">
+          Sharing
+        </Link>
       </nav>
 
       <section className="flex flex-col gap-6">

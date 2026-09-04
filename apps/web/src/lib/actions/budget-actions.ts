@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import * as categories from "@/lib/dal/categories";
 import * as assignments from "@/lib/dal/assignments";
 import * as transactions from "@/lib/dal/transactions";
+import * as targets from "@/lib/dal/targets";
 import type { Result } from "@budgie/core/result";
 import type { Pence } from "@budgie/core/money";
 
@@ -52,6 +53,17 @@ export const moveCategoryAction = async (id: string, direction: "up" | "down") =
 
 export const deleteCategoryAction = async (id: string, reassignToId: string) => {
   await categories.deleteCategory(id, reassignToId);
+  revalidatePath("/budget");
+};
+
+export const setTargetAction = async (categoryId: string, input: unknown) => {
+  const result = await targets.setTarget(categoryId, input);
+  if (result.ok) revalidatePath("/budget");
+  return result;
+};
+
+export const deleteTargetAction = async (categoryId: string) => {
+  await targets.deleteTarget(categoryId);
   revalidatePath("/budget");
 };
 

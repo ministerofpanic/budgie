@@ -48,3 +48,6 @@ export const monthRange = (from: MonthKey, to: MonthKey): readonly MonthKey[] =>
   if (end < start) throw new RangeError(`"${to}" is before "${from}"`);
   return Array.from({ length: end - start + 1 }, (_, offset) => fromIndex(start + offset));
 };
+
+/** Number of months from `from` to `to` - 0 if equal, negative if `to` is earlier. */
+export const monthsBetween = (from: MonthKey, to: MonthKey): number => toIndex(to) - toIndex(from);

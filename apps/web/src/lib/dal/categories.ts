@@ -58,7 +58,7 @@ const requireOwnedGroup = async (budgetId: string, groupId: string) => {
   return group;
 };
 
-const requireOwnedCategory = async (budgetId: string, categoryId: string) => {
+export const requireOwnedCategory = async (budgetId: string, categoryId: string) => {
   const category = await db.query.category.findFirst({
     where: and(eq(schema.category.id, categoryId), eq(schema.category.budgetId, budgetId)),
   });
@@ -67,7 +67,7 @@ const requireOwnedCategory = async (budgetId: string, categoryId: string) => {
 };
 
 export const createCategoryGroup = async (rawName: string): Promise<CategoryGroupRow> => {
-  const { budgetId } = await requireBudget();
+  const { budgetId } = await requireBudget("editor");
   const name = nameSchema.parse(rawName);
 
   const existing = await db.query.categoryGroup.findMany({
@@ -84,7 +84,7 @@ export const createCategoryGroup = async (rawName: string): Promise<CategoryGrou
 };
 
 export const createCategory = async (rawGroupId: string, rawName: string): Promise<CategoryRow> => {
-  const { budgetId } = await requireBudget();
+  const { budgetId } = await requireBudget("editor");
   const groupId = z.uuid().parse(rawGroupId);
   const name = nameSchema.parse(rawName);
   await requireOwnedGroup(budgetId, groupId);
@@ -103,7 +103,7 @@ export const createCategory = async (rawGroupId: string, rawName: string): Promi
 };
 
 export const renameCategoryGroup = async (rawId: string, rawName: string): Promise<void> => {
-  const { budgetId } = await requireBudget();
+  const { budgetId } = await requireBudget("editor");
   const id = z.uuid().parse(rawId);
   const name = nameSchema.parse(rawName);
   await requireOwnedGroup(budgetId, id);
@@ -111,7 +111,7 @@ export const renameCategoryGroup = async (rawId: string, rawName: string): Promi
 };
 
 export const renameCategory = async (rawId: string, rawName: string): Promise<void> => {
-  const { budgetId } = await requireBudget();
+  const { budgetId } = await requireBudget("editor");
   const id = z.uuid().parse(rawId);
   const name = nameSchema.parse(rawName);
   await requireOwnedCategory(budgetId, id);
@@ -119,7 +119,7 @@ export const renameCategory = async (rawId: string, rawName: string): Promise<vo
 };
 
 export const setCategoryHidden = async (rawId: string, hidden: boolean): Promise<void> => {
-  const { budgetId } = await requireBudget();
+  const { budgetId } = await requireBudget("editor");
   const id = z.uuid().parse(rawId);
   await requireOwnedCategory(budgetId, id);
   await db.update(schema.category).set({ hidden }).where(eq(schema.category.id, id));
@@ -130,7 +130,7 @@ export const setCategoryHidden = async (rawId: string, hidden: boolean): Promise
  * mechanic that still works on a phone with no drag-and-drop.
  */
 export const moveCategory = async (rawId: string, direction: "up" | "down"): Promise<void> => {
-  const { budgetId } = await requireBudget();
+  const { budgetId } = await requireBudget("editor");
   const id = z.uuid().parse(rawId);
   const category = await requireOwnedCategory(budgetId, id);
 
@@ -159,7 +159,7 @@ export const moveCategory = async (rawId: string, direction: "up" | "down"): Pro
  * money that's tracked against it.
  */
 export const deleteCategory = async (rawId: string, rawReassignToId: string): Promise<void> => {
-  const { budgetId } = await requireBudget();
+  const { budgetId } = await requireBudget("editor");
   const id = z.uuid().parse(rawId);
   const reassignToId = z.uuid().parse(rawReassignToId);
   if (id === reassignToId) throw new Error("Cannot reassign a category to itself");

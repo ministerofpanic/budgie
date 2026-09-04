@@ -1,17 +1,24 @@
 import "server-only";
 
+import { cookies } from "next/headers";
 import { db, schema } from "@budgie/db";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 import { requireSession } from "@/lib/session";
+
+export type BudgetRole = "owner" | "editor" | "viewer";
 
 export type BudgetContext = {
   readonly budgetId: string;
   readonly userId: string;
-  readonly role: "owner" | "editor" | "viewer";
+  readonly role: BudgetRole;
   readonly firstMonth: string;
   readonly currency: string;
 };
+
+const roleRank: Record<BudgetRole, number> = { viewer: 0, editor: 1, owner: 2 };
+
+const ACTIVE_BUDGET_COOKIE = "budgetId";
 
 const currentMonthStart = (): string => {
   const now = new Date();
@@ -19,9 +26,10 @@ const currentMonthStart = (): string => {
 };
 
 /**
- * Every signed-in user gets exactly one budget of their own - sharing
- * (phase 08) will extend this rather than replace it. Creating it lazily,
- * on first use, means sign-up doesn't need a separate onboarding step.
+ * Every signed-in user gets exactly one budget of their own, created lazily
+ * on first use so sign-up doesn't need a separate onboarding step. Sharing
+ * (phase 08) adds further budgets via membership on top of this - a user's
+ * own budget is never replaced by joining someone else's.
  */
 const createDefaultBudget = async (userId: string, userName: string) => {
   const [budget] = await db
@@ -55,39 +63,100 @@ const createDefaultBudget = async (userId: string, userName: string) => {
   return budget;
 };
 
+export type MembershipRow = {
+  readonly budgetId: string;
+  readonly budgetName: string;
+  readonly role: BudgetRole;
+};
+
+/** Every budget the signed-in user belongs to, for a budget switcher - most
+ * users have exactly one and never see it. */
+export const listMemberships = async (): Promise<readonly MembershipRow[]> => {
+  const session = await requireSession();
+  const memberships = await db.query.budgetMember.findMany({
+    where: eq(schema.budgetMember.userId, session.user.id),
+  });
+  if (memberships.length === 0) return [];
+
+  const budgets = await db.query.budget.findMany({
+    where: inArray(
+      schema.budget.id,
+      memberships.map((membership) => membership.budgetId),
+    ),
+  });
+  const budgetsById = new Map(budgets.map((budget) => [budget.id, budget]));
+
+  return memberships
+    .map((membership) => {
+      const budget = budgetsById.get(membership.budgetId);
+      return budget
+        ? { budgetId: budget.id, budgetName: budget.name, role: membership.role }
+        : null;
+    })
+    .filter((row): row is MembershipRow => row !== null);
+};
+
+/** Switches the active budget for future requests - only onto a budget the
+ * user actually belongs to, so a manipulated cookie value can't grant access
+ * to a budget the caller isn't a member of. */
+export const setActiveBudget = async (rawBudgetId: string): Promise<void> => {
+  const session = await requireSession();
+  const memberships = await db.query.budgetMember.findMany({
+    where: eq(schema.budgetMember.userId, session.user.id),
+  });
+  if (!memberships.some((membership) => membership.budgetId === rawBudgetId)) {
+    throw new Error("Not a member of that budget");
+  }
+
+  const cookieStore = await cookies();
+  cookieStore.set(ACTIVE_BUDGET_COOKIE, rawBudgetId, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  });
+};
+
+const resolveActiveMembership = async (userId: string) => {
+  const memberships = await db.query.budgetMember.findMany({
+    where: eq(schema.budgetMember.userId, userId),
+  });
+  if (memberships.length === 0) return null;
+
+  const cookieStore = await cookies();
+  const activeId = cookieStore.get(ACTIVE_BUDGET_COOKIE)?.value;
+  const active = activeId ? memberships.find((m) => m.budgetId === activeId) : undefined;
+  return active ?? memberships.find((m) => m.role === "owner") ?? memberships[0]!;
+};
+
 /**
- * Resolves the signed-in user's budget, creating one on first use. This is
- * the one place membership is established - every other DAL function takes
- * it as given rather than trusting a budgetId a caller supplies.
+ * Resolves the signed-in user's active budget and membership role, creating
+ * a budget on first use. Every other DAL function takes the resolved
+ * `budgetId` as given rather than trusting one a caller supplies - the
+ * membership lookup here is the one place that's ever established.
+ *
+ * Pass `minRole` to gate a mutation: a member with too low a role throws
+ * rather than the caller silently trusting the UI to have hidden the button.
  */
-export const requireBudget = async (): Promise<BudgetContext> => {
+export const requireBudget = async (minRole: BudgetRole = "viewer"): Promise<BudgetContext> => {
   const session = await requireSession();
   const userId = session.user.id;
 
-  const membership = await db.query.budgetMember.findFirst({
-    where: eq(schema.budgetMember.userId, userId),
-  });
+  const membership = await resolveActiveMembership(userId);
 
-  if (membership) {
-    const budget = await db.query.budget.findFirst({
-      where: eq(schema.budget.id, membership.budgetId),
-    });
-    if (!budget) throw new Error(`budget_member ${membership.id} references a missing budget`);
-    return {
-      budgetId: budget.id,
-      userId,
-      role: membership.role,
-      firstMonth: budget.firstMonth,
-      currency: budget.currency,
-    };
+  const { budgetId, role } = membership
+    ? { budgetId: membership.budgetId, role: membership.role }
+    : {
+        budgetId: (await createDefaultBudget(userId, session.user.name)).id,
+        role: "owner" as const,
+      };
+
+  if (roleRank[role] < roleRank[minRole]) {
+    throw new Error(`This action needs ${minRole} access; you have ${role} access.`);
   }
 
-  const budget = await createDefaultBudget(userId, session.user.name);
-  return {
-    budgetId: budget.id,
-    userId,
-    role: "owner",
-    firstMonth: budget.firstMonth,
-    currency: budget.currency,
-  };
+  const budget = await db.query.budget.findFirst({ where: eq(schema.budget.id, budgetId) });
+  if (!budget) throw new Error(`No budget ${budgetId} found`);
+
+  return { budgetId, userId, role, firstMonth: budget.firstMonth, currency: budget.currency };
 };

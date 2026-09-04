@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import { pgTable, text, timestamp, uuid, uniqueIndex, pgEnum } from "drizzle-orm/pg-core";
 import { budget } from "./budget.ts";
 import { user } from "./auth.ts";
@@ -19,6 +20,11 @@ export const budgetMember = pgTable(
   },
   (t) => [uniqueIndex("budget_member_budget_user_idx").on(t.budgetId, t.userId)],
 );
+
+export const budgetMemberRelations = relations(budgetMember, ({ one }) => ({
+  user: one(user, { fields: [budgetMember.userId], references: [user.id] }),
+  budget: one(budget, { fields: [budgetMember.budgetId], references: [budget.id] }),
+}));
 
 export const budgetInvite = pgTable("budget_invite", {
   id: uuid("id").primaryKey().defaultRandom(),

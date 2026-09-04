@@ -26,7 +26,7 @@ export const reconcileAccount = async (
   rawAccountId: string,
   realBalanceInput: string,
 ): Promise<Result<ReconcileResult, ReconcileError>> => {
-  const { budgetId } = await requireBudget();
+  const { budgetId } = await requireBudget("editor");
   const accountId = z.uuid().parse(rawAccountId);
   const account = await getAccount(accountId);
   if (!account) throw new Error(`No account ${accountId} in this budget`);

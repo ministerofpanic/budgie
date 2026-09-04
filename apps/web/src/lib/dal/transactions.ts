@@ -158,7 +158,7 @@ const resolveSplits = (
 export const createTransaction = async (
   raw: unknown,
 ): Promise<Result<{ readonly id: string }, TransactionInputError>> => {
-  const { budgetId } = await requireBudget();
+  const { budgetId } = await requireBudget("editor");
   const input = transactionInputSchema.parse(raw);
   const account = await getAccount(input.accountId);
   if (!account) throw new Error(`No account ${input.accountId} in this budget`);
@@ -205,7 +205,7 @@ export const updateTransaction = async (
   rawId: string,
   raw: unknown,
 ): Promise<Result<{ readonly id: string }, TransactionInputError>> => {
-  const { budgetId } = await requireBudget();
+  const { budgetId } = await requireBudget("editor");
   const id = z.uuid().parse(rawId);
   const existing = await db.query.transaction.findFirst({
     where: and(eq(schema.transaction.id, id), eq(schema.transaction.budgetId, budgetId)),
@@ -258,7 +258,7 @@ export const setTransactionCleared = async (
   rawIds: readonly string[],
   cleared: boolean,
 ): Promise<void> => {
-  const { budgetId } = await requireBudget();
+  const { budgetId } = await requireBudget("editor");
   const ids = z.array(z.uuid()).parse(rawIds);
   if (ids.length === 0) return;
   await db
@@ -274,7 +274,7 @@ export const setTransactionCleared = async (
 };
 
 export const deleteTransactions = async (rawIds: readonly string[]): Promise<void> => {
-  const { budgetId } = await requireBudget();
+  const { budgetId } = await requireBudget("editor");
   const ids = z.array(z.uuid()).parse(rawIds);
   if (ids.length === 0) return;
   await db

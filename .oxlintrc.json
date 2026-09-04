@@ -33,6 +33,12 @@
       "rules": {
         "no-console": "off"
       }
+    },
+    {
+      "files": ["apps/web/src/components/reports/reports-view.tsx"],
+      "rules": {
+        "react-perf/jsx-no-new-object-as-prop": "off"
+      }
     }
   ]
 }

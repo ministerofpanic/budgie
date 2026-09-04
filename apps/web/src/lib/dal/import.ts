@@ -125,7 +125,7 @@ export const commitImport = async (
   raw: unknown,
   filename: string,
 ): Promise<{ readonly batchId: string; readonly created: number; readonly skipped: number }> => {
-  const { budgetId } = await requireBudget();
+  const { budgetId } = await requireBudget("editor");
   const request = importRequestSchema.parse(raw);
   const account = await getAccount(request.accountId);
   if (!account) throw new Error(`No account ${request.accountId} in this budget`);
@@ -271,7 +271,7 @@ export const listImportBatches = async (
 };
 
 export const undoImportBatch = async (rawBatchId: string): Promise<void> => {
-  const { budgetId } = await requireBudget();
+  const { budgetId } = await requireBudget("editor");
   const batchId = z.uuid().parse(rawBatchId);
   const batch = await db.query.importBatch.findFirst({
     where: and(eq(schema.importBatch.id, batchId), eq(schema.importBatch.budgetId, budgetId)),

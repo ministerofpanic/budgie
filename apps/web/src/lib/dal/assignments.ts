@@ -24,7 +24,7 @@ export const setAssigned = async (
   rawMonth: string,
   amountInput: string,
 ): Promise<Result<Pence, AssignError>> => {
-  const { budgetId } = await requireBudget();
+  const { budgetId } = await requireBudget("editor");
   const categoryId = z.uuid().parse(rawCategoryId);
   const month = monthSchema.parse(rawMonth);
 

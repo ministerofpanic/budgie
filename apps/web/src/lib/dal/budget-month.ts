@@ -2,11 +2,14 @@ import "server-only";
 
 import {
   computeMonth,
+  computeTargetProgress,
   monthOf,
   type BudgetInput,
   type CategoryTransactionInput,
   type MonthKey,
   type MonthResult,
+  type Target,
+  type TargetProgress,
 } from "@budgie/budget";
 import { unsafePence } from "@budgie/core/money";
 import { db, schema } from "@budgie/db";
@@ -14,12 +17,15 @@ import { eq, inArray } from "drizzle-orm";
 
 import { requireBudget } from "@/lib/dal/budget";
 import { listCategoryGroups, type CategoryGroupRow } from "@/lib/dal/categories";
+import { listTargets } from "@/lib/dal/targets";
 
 export type BudgetMonthGroup = Omit<CategoryGroupRow, "categories"> & {
   readonly categories: readonly (CategoryGroupRow["categories"][number] & {
     readonly assigned: number;
     readonly activity: number;
     readonly available: number;
+    readonly target: Target | null;
+    readonly targetProgress: TargetProgress | null;
   })[];
 };
 
@@ -124,7 +130,7 @@ export const getBudgetMonth = async (month: MonthKey): Promise<BudgetMonthView> 
   const result: MonthResult = computeMonth(input, month);
 
   const resultByCategory = new Map(result.categories.map((row) => [row.categoryId, row]));
-  const groups = await listCategoryGroups();
+  const [groups, targets] = await Promise.all([listCategoryGroups(), listTargets(budgetId)]);
 
   const view: BudgetMonthGroup[] = groups
     .filter((group) => !group.isSystem)
@@ -136,6 +142,7 @@ export const getBudgetMonth = async (month: MonthKey): Promise<BudgetMonthView> 
       isSystem: group.isSystem,
       categories: group.categories.map((category) => {
         const row = resultByCategory.get(category.id);
+        const target = targets.get(category.id) ?? null;
         return {
           id: category.id,
           groupId: category.groupId,
@@ -147,6 +154,8 @@ export const getBudgetMonth = async (month: MonthKey): Promise<BudgetMonthView> 
           assigned: row?.assigned ?? 0,
           activity: row?.activity ?? 0,
           available: row?.available ?? 0,
+          target,
+          targetProgress: target && row ? computeTargetProgress(target, row, month) : null,
         };
       }),
     }));
