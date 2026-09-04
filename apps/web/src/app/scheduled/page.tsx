@@ -1,15 +1,16 @@
 import { autoEnterDue, listUpcoming } from "@/lib/dal/scheduled-transactions";
-import { listAccounts } from "@/lib/dal/accounts";
 import { listCategoryGroups } from "@/lib/dal/categories";
+import { getAppShellData } from "@/lib/dal/app-shell";
+import { AppHeader } from "@/components/app-header";
 import { ScheduledList } from "@/components/scheduled/scheduled-list";
 
 const ScheduledPage = async () => {
   await autoEnterDue();
 
-  const [upcoming, accounts, groups] = await Promise.all([
+  const [upcoming, groups, shell] = await Promise.all([
     listUpcoming(),
-    listAccounts(),
     listCategoryGroups(),
+    getAppShellData(),
   ]);
 
   const categoryOptions = groups.flatMap((group) =>
@@ -19,9 +20,16 @@ const ScheduledPage = async () => {
   );
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-6 px-4 py-8 sm:px-6">
-      <ScheduledList upcoming={upcoming} accounts={accounts} categoryOptions={categoryOptions} />
-    </main>
+    <>
+      <AppHeader {...shell} />
+      <main className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-6 sm:px-6">
+        <ScheduledList
+          upcoming={upcoming}
+          accounts={shell.accounts}
+          categoryOptions={categoryOptions}
+        />
+      </main>
+    </>
   );
 };
 

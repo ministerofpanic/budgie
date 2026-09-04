@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useState, useTransition } from "react";
+import { Check, Lock, Upload } from "lucide-react";
 
 import { format, unsafePence } from "@budgie/core/money";
 import type { AccountRow } from "@/lib/dal/accounts";
@@ -11,6 +12,7 @@ import {
   setTransactionClearedAction,
 } from "@/lib/actions/budget-actions";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { TransactionForm } from "@/components/register/transaction-form";
 import { ReconcileForm } from "@/components/register/reconcile-form";
 
@@ -49,39 +51,51 @@ const TransactionListRow = ({
 
   if (editing) {
     return (
-      <TransactionForm
-        accountId={accountId}
-        categoryOptions={categoryOptions}
-        existing={transaction}
-        onDone={stopEditing}
-      />
+      <div className="py-2">
+        <TransactionForm
+          accountId={accountId}
+          categoryOptions={categoryOptions}
+          existing={transaction}
+          onDone={stopEditing}
+        />
+      </div>
     );
   }
 
   const categoryLabel =
-    (transaction.splits.length > 0
+    transaction.splits.length > 0
       ? `Split (${String(transaction.splits.length)})`
-      : (transaction.categoryName ?? "Uncategorised")) +
-    (transaction.reconciled ? " · 🔒 reconciled" : "");
+      : (transaction.categoryName ?? "Uncategorised");
 
   return (
-    <div className="flex items-center gap-2 border-b py-2 text-sm">
+    <div className="hover:bg-accent/40 -mx-2 flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm transition-colors">
       <input
         type="checkbox"
         checked={selected}
         disabled={transaction.reconciled}
         onChange={handleToggleSelected}
+        className="accent-primary size-4"
       />
       <button
         type="button"
         className="grid flex-1 grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-0.5 text-left"
         onClick={startEditing}
       >
-        <span className="text-muted-foreground w-20 tabular">{transaction.date}</span>
+        <span className="text-muted-foreground tabular w-20">{transaction.date}</span>
         <span className="truncate font-medium">{transaction.payeeName ?? "(No payee)"}</span>
-        <span className="tabular w-20 text-right">{money(transaction.amountPence)}</span>
-        <span className="text-muted-foreground col-start-2 truncate text-xs">{categoryLabel}</span>
-        <span className="text-muted-foreground col-start-3 text-right text-xs tabular">
+        <span className="tabular w-20 text-right font-medium">
+          {money(transaction.amountPence)}
+        </span>
+        <span className="text-muted-foreground col-start-2 flex items-center gap-1.5 truncate text-xs">
+          {categoryLabel}
+          {transaction.reconciled ? (
+            <Badge variant="secondary" className="gap-1 text-[10px]">
+              <Lock className="size-2.5" />
+              Reconciled
+            </Badge>
+          ) : null}
+        </span>
+        <span className="text-muted-foreground tabular col-start-3 text-right text-xs">
           {money(transaction.runningBalance)}
         </span>
       </button>
@@ -90,11 +104,11 @@ const TransactionListRow = ({
         aria-label={transaction.cleared ? "Mark uncleared" : "Mark cleared"}
         disabled={pending || transaction.reconciled}
         onClick={toggleCleared}
-        className={`size-5 shrink-0 rounded border text-xs ${
-          transaction.cleared ? "bg-primary text-primary-foreground" : ""
+        className={`flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors ${
+          transaction.cleared ? "bg-primary border-primary text-primary-foreground" : "border-input"
         }`}
       >
-        {transaction.cleared ? "✓" : ""}
+        {transaction.cleared ? <Check className="size-3" /> : null}
       </button>
     </div>
   );
@@ -102,7 +116,6 @@ const TransactionListRow = ({
 
 const Register = ({
   account,
-  accounts,
   transactions,
   categoryOptions,
 }: {
@@ -153,26 +166,20 @@ const Register = ({
 
   return (
     <>
-      <header className="flex items-center justify-between">
+      <header className="flex items-center justify-between gap-2">
         <div>
-          <p className="text-lg font-semibold">{account.name}</p>
-          <nav className="flex gap-3 text-sm">
-            <Link href="/budget" className="underline">
-              Budget
-            </Link>
-            <Link href={`/accounts/${account.id}/import`} className="underline">
-              Import
-            </Link>
-            {accounts
-              .filter((other) => other.id !== account.id)
-              .map((other) => (
-                <Link key={other.id} href={`/accounts/${other.id}`} className="underline">
-                  {other.name}
-                </Link>
-              ))}
-          </nav>
+          <p className="text-xl font-semibold">{account.name}</p>
+          <Badge variant="secondary" className="mt-1 capitalize">
+            {account.type}
+          </Badge>
         </div>
         <div className="flex gap-2">
+          <Button asChild type="button" size="sm" variant="outline">
+            <Link href={`/accounts/${account.id}/import`}>
+              <Upload className="size-3.5" />
+              Import
+            </Link>
+          </Button>
           <Button type="button" size="sm" variant="outline" onClick={toggleReconcile}>
             {showReconcile ? "Close" : "Reconcile"}
           </Button>
@@ -193,8 +200,8 @@ const Register = ({
       ) : null}
 
       {selected.size > 0 ? (
-        <div className="bg-muted flex items-center gap-2 rounded-md p-2 text-sm">
-          <span>{selected.size} selected</span>
+        <div className="bg-muted flex items-center gap-2 rounded-lg p-2 text-sm">
+          <span className="px-1">{selected.size} selected</span>
           <Button
             type="button"
             size="sm"
@@ -225,7 +232,7 @@ const Register = ({
         </div>
       ) : null}
 
-      <div className="flex flex-col">
+      <div className="flex flex-col divide-y">
         {transactions.map((transaction) => (
           <TransactionListRow
             key={transaction.id}

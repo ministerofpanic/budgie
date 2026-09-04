@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState, useTransition } from "react";
+import { Copy, Link2, UserRound } from "lucide-react";
 
 import type { BudgetRole } from "@/lib/dal/budget";
 import type { MemberRow, PendingInviteRow } from "@/lib/dal/sharing";
@@ -11,11 +12,25 @@ import {
   revokeInviteAction,
 } from "@/lib/actions/sharing-actions";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const roleLabel: Record<BudgetRole, string> = {
   owner: "Owner",
   editor: "Editor",
   viewer: "Viewer",
+};
+
+const roleBadgeVariant: Record<BudgetRole, "default" | "secondary" | "outline"> = {
+  owner: "default",
+  editor: "secondary",
+  viewer: "outline",
 };
 
 const MemberRowView = ({
@@ -32,8 +47,7 @@ const MemberRowView = ({
   const isSelf = member.userId === myUserId;
 
   const handleRoleChange = useCallback(
-    (event: React.ChangeEvent<HTMLSelectElement>) => {
-      const role = event.target.value;
+    (role: string) => {
       startTransition(async () => {
         try {
           await changeRoleAction(member.id, role);
@@ -58,28 +72,33 @@ const MemberRowView = ({
   }, [member.id]);
 
   return (
-    <div className="flex flex-col gap-1 py-2">
+    <div className="flex flex-col gap-1 py-2.5">
       <div className="flex items-center justify-between gap-2">
-        <div>
-          <p className="text-sm font-medium">
-            {member.name} {isSelf ? "(you)" : ""}
-          </p>
-          <p className="text-muted-foreground text-xs">{member.email}</p>
+        <div className="flex items-center gap-3">
+          <div className="bg-muted text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-full">
+            <UserRound className="size-4" />
+          </div>
+          <div>
+            <p className="text-sm font-medium">
+              {member.name} {isSelf ? <span className="text-muted-foreground">(you)</span> : null}
+            </p>
+            <p className="text-muted-foreground text-xs">{member.email}</p>
+          </div>
         </div>
         {isOwner && !isSelf ? (
           <div className="flex items-center gap-2">
-            <select
-              className="border-input h-8 rounded-md border bg-transparent px-2 text-sm"
-              value={member.role}
-              disabled={pending}
-              onChange={handleRoleChange}
-            >
-              {(Object.keys(roleLabel) as BudgetRole[]).map((role) => (
-                <option key={role} value={role}>
-                  {roleLabel[role]}
-                </option>
-              ))}
-            </select>
+            <Select value={member.role} onValueChange={handleRoleChange} disabled={pending}>
+              <SelectTrigger size="sm" className="w-28">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(roleLabel) as BudgetRole[]).map((role) => (
+                  <SelectItem key={role} value={role}>
+                    {roleLabel[role]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button
               type="button"
               size="sm"
@@ -91,10 +110,10 @@ const MemberRowView = ({
             </Button>
           </div>
         ) : (
-          <span className="text-muted-foreground text-sm">{roleLabel[member.role]}</span>
+          <Badge variant={roleBadgeVariant[member.role]}>{roleLabel[member.role]}</Badge>
         )}
       </div>
-      {error ? <span className="text-destructive text-xs">{error}</span> : null}
+      {error ? <span className="text-destructive ml-12 text-xs">{error}</span> : null}
     </div>
   );
 };
@@ -102,41 +121,52 @@ const MemberRowView = ({
 const InviteForm = () => {
   const [role, setRole] = useState<BudgetRole>("editor");
   const [link, setLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [pending, startTransition] = useTransition();
-
-  const handleRoleChange = useCallback(
-    (event: React.ChangeEvent<HTMLSelectElement>) => setRole(event.target.value as BudgetRole),
-    [],
-  );
 
   const handleCreate = useCallback(() => {
     startTransition(async () => {
       const invite = await createInviteAction(role);
       setLink(`${window.location.origin}/invite/${invite.token}`);
+      setCopied(false);
     });
   }, [role]);
 
+  const handleCopy = useCallback(() => {
+    if (!link) return;
+    void navigator.clipboard.writeText(link);
+    setCopied(true);
+  }, [link]);
+  const handleRoleChange = useCallback((value: string) => setRole(value as BudgetRole), []);
+
   return (
-    <div className="flex flex-col gap-2 rounded-lg border p-4">
+    <div className="bg-card flex flex-col gap-3 rounded-xl border p-4 shadow-sm">
       <p className="text-sm font-semibold">Invite someone</p>
       <div className="flex flex-wrap gap-2">
-        <select
-          className="border-input h-9 rounded-md border bg-transparent px-2 text-sm"
-          value={role}
-          onChange={handleRoleChange}
-        >
-          <option value="editor">Editor</option>
-          <option value="viewer">Viewer</option>
-        </select>
+        <Select value={role} onValueChange={handleRoleChange}>
+          <SelectTrigger className="w-32">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="editor">Editor</SelectItem>
+            <SelectItem value="viewer">Viewer</SelectItem>
+          </SelectContent>
+        </Select>
         <Button type="button" disabled={pending} onClick={handleCreate}>
+          <Link2 className="size-4" />
           Create invite link
         </Button>
       </div>
       {link ? (
-        <p className="text-muted-foreground text-xs break-all">
-          {link} <span className="italic">(valid for 7 days, single use)</span>
-        </p>
+        <div className="bg-muted flex items-center gap-2 rounded-lg p-2">
+          <p className="flex-1 truncate text-xs">{link}</p>
+          <Button type="button" size="sm" variant="ghost" onClick={handleCopy}>
+            <Copy className="size-3.5" />
+            {copied ? "Copied" : "Copy"}
+          </Button>
+        </div>
       ) : null}
+      <p className="text-muted-foreground text-xs">Valid for 7 days, single use.</p>
     </div>
   );
 };
@@ -148,9 +178,10 @@ const PendingInviteRowView = ({ invite }: { readonly invite: PendingInviteRow })
   }, [invite.id]);
 
   return (
-    <div className="flex items-center justify-between py-2 text-sm">
-      <span>
-        {roleLabel[invite.role]} invite · expires {invite.expiresAt.slice(0, 10)}
+    <div className="flex items-center justify-between py-2.5 text-sm">
+      <span className="flex items-center gap-2">
+        <Badge variant={roleBadgeVariant[invite.role]}>{roleLabel[invite.role]}</Badge>
+        <span className="text-muted-foreground">expires {invite.expiresAt.slice(0, 10)}</span>
       </span>
       <Button type="button" size="sm" variant="outline" disabled={pending} onClick={handleRevoke}>
         Revoke
@@ -171,10 +202,12 @@ const SharingView = ({
   readonly myUserId: string;
 }) => (
   <>
-    <h1 className="text-lg font-semibold">Sharing</h1>
+    <h1 className="text-xl font-semibold">Sharing</h1>
 
-    <section className="rounded-lg border px-4">
-      <p className="text-muted-foreground pt-3 text-xs uppercase">Members</p>
+    <section className="rounded-xl border px-4">
+      <p className="text-muted-foreground pt-3 text-xs font-medium tracking-wide uppercase">
+        Members
+      </p>
       <div className="flex flex-col divide-y">
         {members.map((member) => (
           <MemberRowView key={member.id} member={member} isOwner={isOwner} myUserId={myUserId} />
@@ -186,8 +219,10 @@ const SharingView = ({
       <>
         <InviteForm />
         {invites.length > 0 ? (
-          <section className="rounded-lg border px-4">
-            <p className="text-muted-foreground pt-3 text-xs uppercase">Pending invites</p>
+          <section className="rounded-xl border px-4">
+            <p className="text-muted-foreground pt-3 text-xs font-medium tracking-wide uppercase">
+              Pending invites
+            </p>
             <div className="flex flex-col divide-y">
               {invites.map((invite) => (
                 <PendingInviteRowView key={invite.id} invite={invite} />

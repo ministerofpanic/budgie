@@ -43,7 +43,8 @@ test("a scheduled transaction auto-enters on its due date and advances", async (
 
   await page.getByPlaceholder("Payee").fill("Landlord");
   await page.getByLabel("Outflow").fill("900.00");
-  await page.locator("select").nth(1).selectOption({ label: "Everyday: Rent" });
+  await page.getByRole("combobox").nth(1).click();
+  await page.getByRole("option", { name: "Everyday: Rent" }).click();
   await page.locator("input[type=date]").fill(todayIso());
   await page.getByRole("button", { name: "Add scheduled transaction" }).click();
 
@@ -76,7 +77,8 @@ test("skipping a scheduled transaction advances it without entering anything", a
   await page.goto("/scheduled");
   await page.getByPlaceholder("Payee").fill("Gym membership");
   await page.getByLabel("Outflow").fill("30.00");
-  await page.locator("select").nth(1).selectOption({ label: "Everyday: Gym" });
+  await page.getByRole("combobox").nth(1).click();
+  await page.getByRole("option", { name: "Everyday: Gym" }).click();
   const future = new Date();
   future.setUTCDate(future.getUTCDate() + 10);
   await page.locator("input[type=date]").fill(future.toISOString().slice(0, 10));

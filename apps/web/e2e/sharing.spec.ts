@@ -28,7 +28,8 @@ const signUpFreshUser = async (page: Page, name: string) => {
 
 const createInvite = async (page: Page, role: "editor" | "viewer"): Promise<string> => {
   await page.goto("/sharing");
-  await page.locator("select").selectOption(role);
+  await page.getByRole("combobox").click();
+  await page.getByRole("option", { name: role }).click();
   await page.getByRole("button", { name: "Create invite link" }).click();
   const linkText = await page.getByText(/\/invite\//).textContent();
   const match = linkText?.match(/\/invite\/([\w-]+)/);

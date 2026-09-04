@@ -48,7 +48,7 @@ test("reconciling creates an adjustment and locks cleared transactions", async (
   await expect(page.getByText(/Created a -£5\.00 adjustment/)).toBeVisible();
 
   await page.getByRole("button", { name: "Done" }).click();
-  await expect(page.getByText("🔒 reconciled").first()).toBeVisible();
+  await expect(page.getByText("Reconciled").first()).toBeVisible();
 
   // A reconciled row can no longer be edited. The DAL enforces this
   // server-side too (verified separately) - this checks the UI honours it.

@@ -48,7 +48,7 @@ const ReconcileForm = ({
   );
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-2 rounded-md border p-3">
+    <form onSubmit={submit} className="bg-card flex flex-col gap-2 rounded-xl border p-4 shadow-sm">
       <Label htmlFor="real-balance">Real-world balance</Label>
       <Input id="real-balance" inputMode="decimal" value={realBalance} onChange={handleChange} />
       {error ? <p className="text-destructive text-sm">{error}</p> : null}

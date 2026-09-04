@@ -63,13 +63,19 @@ const NavLink = ({
   </Link>
 );
 
-const AccountsMenu = ({ accounts }: { readonly accounts: readonly AccountRow[] }) => (
+const AccountsMenu = ({
+  accounts,
+  active,
+}: {
+  readonly accounts: readonly AccountRow[];
+  readonly active: boolean;
+}) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
       <Button
         variant="ghost"
         size="sm"
-        className="text-muted-foreground gap-1.5"
+        className={`gap-1.5 rounded-full ${active ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" : "text-muted-foreground"}`}
         aria-label="Accounts"
       >
         <Landmark className="size-4" />
@@ -143,7 +149,7 @@ const AppHeader = ({
           {navItems.map((item) => (
             <NavLink key={item.href} {...item} active={pathname.startsWith(item.href)} />
           ))}
-          <AccountsMenu accounts={accounts} />
+          <AccountsMenu accounts={accounts} active={pathname.startsWith("/accounts")} />
         </nav>
 
         <div className="ml-auto flex items-center gap-2">

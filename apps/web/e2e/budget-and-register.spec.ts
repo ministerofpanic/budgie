@@ -55,7 +55,8 @@ test("a full month can be budgeted and spent", async ({ page }) => {
   await page.getByRole("button", { name: "Add transaction" }).click();
   await page.getByLabel("Payee").fill("Supermarket");
   await page.getByLabel("Outflow").fill("23.50");
-  await page.locator("select").first().selectOption({ label: "Everyday: Groceries" });
+  await page.getByRole("combobox").click();
+  await page.getByRole("option", { name: "Everyday: Groceries" }).click();
   await page.getByRole("button", { name: "Add transaction" }).click();
 
   await expect(page.getByText("Supermarket")).toBeVisible();

@@ -1,11 +1,13 @@
 import { compareMonths, monthRange, type MonthKey } from "@budgie/budget";
 
 import { requireBudget } from "@/lib/dal/budget";
+import { getAppShellData } from "@/lib/dal/app-shell";
 import {
   getIncomeVsExpenditure,
   getNetWorthByMonth,
   getSpendingByCategory,
 } from "@/lib/dal/reports";
+import { AppHeader } from "@/components/app-header";
 import { ReportsView } from "@/components/reports/reports-view";
 
 const currentMonthKey = (): MonthKey => {
@@ -39,22 +41,26 @@ const ReportsPage = async ({
     currentMonth,
   ).slice(-12);
 
-  const [spending, incomeVsExpenditure, netWorth] = await Promise.all([
+  const [spending, incomeVsExpenditure, netWorth, shell] = await Promise.all([
     getSpendingByCategory(from, to),
     getIncomeVsExpenditure(from, to),
     getNetWorthByMonth(netWorthMonths),
+    getAppShellData(),
   ]);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-6 px-4 py-8 sm:px-6">
-      <ReportsView
-        from={from}
-        to={to}
-        spending={spending}
-        incomeVsExpenditure={incomeVsExpenditure}
-        netWorth={netWorth}
-      />
-    </main>
+    <>
+      <AppHeader {...shell} />
+      <main className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-6 sm:px-6">
+        <ReportsView
+          from={from}
+          to={to}
+          spending={spending}
+          incomeVsExpenditure={incomeVsExpenditure}
+          netWorth={netWorth}
+        />
+      </main>
+    </>
   );
 };
 

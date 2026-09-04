@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState, useTransition } from "react";
+import { CalendarClock, Plus, Repeat } from "lucide-react";
 
 import { format, unsafePence } from "@budgie/core/money";
 import type { AccountRow } from "@/lib/dal/accounts";
@@ -12,8 +13,16 @@ import {
   skipNextOccurrenceAction,
 } from "@/lib/actions/scheduled-actions";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const money = (pence: number) => format(unsafePence(pence));
 
@@ -69,24 +78,35 @@ const ScheduledRow = ({ row }: { readonly row: ScheduledTransactionRow }) => {
   }, [row.id]);
 
   return (
-    <div className="flex flex-col gap-2 py-3">
+    <div className="flex flex-col gap-3 py-3">
       <div className="flex items-center justify-between gap-2">
-        <div>
-          <p className="text-sm font-medium">{row.payeeName ?? "(no payee)"}</p>
-          <p className="text-muted-foreground text-xs">
-            {row.accountName} · {row.categoryName ?? "Uncategorised"} ·{" "}
-            {frequencyLabel[row.frequency]} · next {row.nextDate}
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="bg-muted text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-full">
+            <Repeat className="size-4" />
+          </div>
+          <div>
+            <p className="text-sm font-medium">{row.payeeName ?? "(no payee)"}</p>
+            <p className="text-muted-foreground flex flex-wrap items-center gap-1.5 text-xs">
+              {row.accountName} · {row.categoryName ?? "Uncategorised"}
+              <Badge variant="secondary" className="text-[10px]">
+                {frequencyLabel[row.frequency]}
+              </Badge>
+              <span className="inline-flex items-center gap-1">
+                <CalendarClock className="size-3" />
+                {row.nextDate}
+              </span>
+            </p>
+          </div>
         </div>
         <span
-          className={`tabular text-sm font-medium ${
+          className={`tabular text-sm font-semibold ${
             row.amountPence < 0 ? "text-money-negative" : "text-money-positive"
           }`}
         >
           {money(row.amountPence)}
         </span>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 pl-12">
         <Button type="button" size="sm" disabled={pending} onClick={handleEnter}>
           Enter now
         </Button>
@@ -99,7 +119,8 @@ const ScheduledRow = ({ row }: { readonly row: ScheduledTransactionRow }) => {
         <Button
           type="button"
           size="sm"
-          variant="destructive"
+          variant="ghost"
+          className="text-destructive"
           disabled={pending}
           onClick={handleDelete}
         >
@@ -107,7 +128,7 @@ const ScheduledRow = ({ row }: { readonly row: ScheduledTransactionRow }) => {
         </Button>
       </div>
       {editing ? (
-        <div className="flex flex-wrap items-end gap-2">
+        <div className="ml-12 flex flex-wrap items-end gap-2">
           <Input type="date" className="h-8 w-36" value={date} onChange={handleDateChange} />
           <Input
             inputMode="decimal"
@@ -120,7 +141,7 @@ const ScheduledRow = ({ row }: { readonly row: ScheduledTransactionRow }) => {
           </Button>
         </div>
       ) : null}
-      {error ? <span className="text-destructive text-xs">{error}</span> : null}
+      {error ? <span className="text-destructive ml-12 text-xs">{error}</span> : null}
     </div>
   );
 };
@@ -142,14 +163,6 @@ const AddScheduledForm = ({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const handleAccountChange = useCallback(
-    (event: React.ChangeEvent<HTMLSelectElement>) => setAccountId(event.target.value),
-    [],
-  );
-  const handleCategoryChange = useCallback(
-    (event: React.ChangeEvent<HTMLSelectElement>) => setCategoryId(event.target.value),
-    [],
-  );
   const handlePayeeChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => setPayeeName(event.target.value),
     [],
@@ -163,8 +176,7 @@ const AddScheduledForm = ({
     if (event.target.value) setOutflow("");
   }, []);
   const handleFrequencyChange = useCallback(
-    (event: React.ChangeEvent<HTMLSelectElement>) =>
-      setFrequency(event.target.value as ScheduledTransactionRow["frequency"]),
+    (value: string) => setFrequency(value as ScheduledTransactionRow["frequency"]),
     [],
   );
   const handleNextDateChange = useCallback(
@@ -199,31 +211,33 @@ const AddScheduledForm = ({
   );
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-2 rounded-lg border p-4">
+    <form onSubmit={submit} className="bg-card flex flex-col gap-3 rounded-xl border p-4 shadow-sm">
       <p className="text-sm font-semibold">Add a scheduled transaction</p>
       <div className="flex flex-wrap gap-2">
-        <select
-          className="border-input h-9 rounded-md border bg-transparent px-2 text-sm"
-          value={accountId}
-          onChange={handleAccountChange}
-        >
-          {accounts.map((account) => (
-            <option key={account.id} value={account.id}>
-              {account.name}
-            </option>
-          ))}
-        </select>
-        <select
-          className="border-input h-9 rounded-md border bg-transparent px-2 text-sm"
-          value={categoryId}
-          onChange={handleCategoryChange}
-        >
-          {categoryOptions.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.name}
-            </option>
-          ))}
-        </select>
+        <Select value={accountId} onValueChange={setAccountId}>
+          <SelectTrigger>
+            <SelectValue placeholder="Account" />
+          </SelectTrigger>
+          <SelectContent>
+            {accounts.map((account) => (
+              <SelectItem key={account.id} value={account.id}>
+                {account.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={categoryId} onValueChange={setCategoryId}>
+          <SelectTrigger>
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            {categoryOptions.map((option) => (
+              <SelectItem key={option.id} value={option.id}>
+                {option.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <Input placeholder="Payee" value={payeeName} onChange={handlePayeeChange} />
       <div className="flex flex-wrap gap-2">
@@ -247,20 +261,24 @@ const AddScheduledForm = ({
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
-        <select
-          className="border-input h-9 rounded-md border bg-transparent px-2 text-sm"
-          value={frequency}
-          onChange={handleFrequencyChange}
-        >
-          {(Object.keys(frequencyLabel) as ScheduledTransactionRow["frequency"][]).map((option) => (
-            <option key={option} value={option}>
-              {frequencyLabel[option]}
-            </option>
-          ))}
-        </select>
-        <Input type="date" className="h-9 w-36" value={nextDate} onChange={handleNextDateChange} />
+        <Select value={frequency} onValueChange={handleFrequencyChange}>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {(Object.keys(frequencyLabel) as ScheduledTransactionRow["frequency"][]).map(
+              (option) => (
+                <SelectItem key={option} value={option}>
+                  {frequencyLabel[option]}
+                </SelectItem>
+              ),
+            )}
+          </SelectContent>
+        </Select>
+        <Input type="date" className="w-36" value={nextDate} onChange={handleNextDateChange} />
       </div>
       <Button type="submit" disabled={pending || (!outflow && !inflow)}>
+        <Plus className="size-4" />
         Add scheduled transaction
       </Button>
       {error ? <span className="text-destructive text-xs">{error}</span> : null}
@@ -278,13 +296,13 @@ const ScheduledList = ({
   readonly categoryOptions: readonly CategoryOption[];
 }) => (
   <>
-    <h1 className="text-lg font-semibold">Scheduled transactions</h1>
-    <div className="flex flex-col divide-y rounded-lg border px-4">
+    <h1 className="text-xl font-semibold">Scheduled transactions</h1>
+    <div className="flex flex-col divide-y rounded-xl border px-4">
       {upcoming.map((row) => (
         <ScheduledRow key={row.id} row={row} />
       ))}
       {upcoming.length === 0 ? (
-        <p className="text-muted-foreground py-4 text-sm">Nothing scheduled yet.</p>
+        <p className="text-muted-foreground py-6 text-center text-sm">Nothing scheduled yet.</p>
       ) : null}
     </div>
     <AddScheduledForm accounts={accounts} categoryOptions={categoryOptions} />

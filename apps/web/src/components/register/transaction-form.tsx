@@ -1,12 +1,20 @@
 "use client";
 
 import { useCallback, useId, useState, useTransition } from "react";
+import { Plus } from "lucide-react";
 
 import type { TransactionRow } from "@/lib/dal/transactions";
 import { createTransactionAction, updateTransactionAction } from "@/lib/actions/budget-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type CategoryOption = { readonly id: string; readonly name: string };
 
@@ -26,6 +34,31 @@ const errorMessage = {
   "reconciled-locked": "This transaction is reconciled and locked - it can't be edited.",
 } as const;
 
+const CategorySelect = ({
+  value,
+  categoryOptions,
+  onChange,
+  className,
+}: {
+  readonly value: string;
+  readonly categoryOptions: readonly CategoryOption[];
+  readonly onChange: (value: string) => void;
+  readonly className?: string;
+}) => (
+  <Select value={value} onValueChange={onChange}>
+    <SelectTrigger className={className}>
+      <SelectValue placeholder="Choose a category" />
+    </SelectTrigger>
+    <SelectContent>
+      {categoryOptions.map((option) => (
+        <SelectItem key={option.id} value={option.id}>
+          {option.name}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+);
+
 const SplitRowFields = ({
   row,
   categoryOptions,
@@ -38,8 +71,7 @@ const SplitRowFields = ({
   readonly onAmountChange: (rowId: string, amountInput: string) => void;
 }) => {
   const handleCategoryChange = useCallback(
-    (event: React.ChangeEvent<HTMLSelectElement>) =>
-      onCategoryChange(row.rowId, event.target.value),
+    (value: string) => onCategoryChange(row.rowId, value),
     [row.rowId, onCategoryChange],
   );
   const handleAmountChange = useCallback(
@@ -49,17 +81,12 @@ const SplitRowFields = ({
 
   return (
     <div className="flex gap-2">
-      <select
-        className="border-input h-9 flex-1 rounded-md border bg-transparent px-2 text-sm"
+      <CategorySelect
         value={row.categoryId}
+        categoryOptions={categoryOptions}
         onChange={handleCategoryChange}
-      >
-        {categoryOptions.map((option) => (
-          <option key={option.id} value={option.id}>
-            {option.name}
-          </option>
-        ))}
-      </select>
+        className="flex-1"
+      />
       <Input
         inputMode="decimal"
         className="w-24"
@@ -125,10 +152,6 @@ const TransactionForm = ({
   );
   const handleSplitToggle = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => setSplit(event.target.checked),
-    [],
-  );
-  const handleCategoryChange = useCallback(
-    (event: React.ChangeEvent<HTMLSelectElement>) => setCategoryId(event.target.value),
     [],
   );
   const handleOutflowChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -220,8 +243,8 @@ const TransactionForm = ({
   );
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-2 rounded-md border p-3">
-      <div className="grid grid-cols-2 gap-2">
+    <form onSubmit={submit} className="bg-card flex flex-col gap-3 rounded-xl border p-4 shadow-sm">
+      <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
           <Label htmlFor="date">Date</Label>
           <Input id="date" type="date" value={date} onChange={handleDateChange} />
@@ -232,7 +255,7 @@ const TransactionForm = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
           <Label htmlFor="outflow">Outflow</Label>
           <Input id="outflow" inputMode="decimal" value={outflow} onChange={handleOutflowChange} />
@@ -243,7 +266,7 @@ const TransactionForm = ({
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-sm">
+      <label className="text-muted-foreground flex items-center gap-2 text-sm">
         <input type="checkbox" checked={split} onChange={handleSplitToggle} />
         Split across categories
       </label>
@@ -260,21 +283,16 @@ const TransactionForm = ({
             />
           ))}
           <Button type="button" variant="outline" size="sm" onClick={addSplitRow}>
+            <Plus className="size-3.5" />
             Add split
           </Button>
         </div>
       ) : (
-        <select
-          className="border-input h-9 rounded-md border bg-transparent px-2 text-sm"
+        <CategorySelect
           value={categoryId}
-          onChange={handleCategoryChange}
-        >
-          {categoryOptions.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.name}
-            </option>
-          ))}
-        </select>
+          categoryOptions={categoryOptions}
+          onChange={setCategoryId}
+        />
       )}
 
       <div className="flex flex-col gap-1">
@@ -282,7 +300,7 @@ const TransactionForm = ({
         <Input id="memo" value={memo} onChange={handleMemoChange} />
       </div>
 
-      <label className="flex items-center gap-2 text-sm">
+      <label className="text-muted-foreground flex items-center gap-2 text-sm">
         <input type="checkbox" checked={cleared} onChange={handleClearedChange} />
         Cleared
       </label>
