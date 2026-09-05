@@ -23,7 +23,7 @@ export const LinkBankForm = ({
   readonly institutions: readonly InstitutionOption[];
 }) => {
   const router = useRouter();
-  const [institutionId, setInstitutionId] = useState<string | null>(null);
+  const [institutionId, setInstitutionId] = useState("");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -58,7 +58,7 @@ export const LinkBankForm = ({
         </p>
       </div>
 
-      <Select {...(institutionId ? { value: institutionId } : {})} onValueChange={setInstitutionId}>
+      <Select value={institutionId} onValueChange={setInstitutionId}>
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Choose your bank" />
         </SelectTrigger>
