@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { WebAuthnAbortService } from "@simplewebauthn/browser";
 
 import { authClient } from "@/lib/auth-client";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,14 @@ const SignInForm = () => {
       setError(result.error.message ?? "Could not sign you in.");
     };
     void runConditionalSignIn();
+
+    // Conditional UI has no natural end - the browser keeps listening until
+    // a credential is picked. If this component unmounts while that's still
+    // outstanding (navigating to sign-up, a hard reload mid-request), cancel
+    // it explicitly - otherwise the browser can still consider a WebAuthn
+    // ceremony "pending" and reject the next one (registration on sign-up,
+    // or a second sign-in attempt) with "A request is already pending."
+    return () => WebAuthnAbortService.cancelCeremony();
   }, [router]);
 
   return (
