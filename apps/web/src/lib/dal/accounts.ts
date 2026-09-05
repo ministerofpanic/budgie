@@ -91,3 +91,48 @@ export const createAccount = async (rawName: string, rawType: unknown): Promise<
 
   return account;
 };
+
+/** Closing hides the account from the active list and stops new transactions
+ * against it, but keeps its history and any budget impact intact - the
+ * default, reversible way to retire an account. */
+export const closeAccount = async (rawAccountId: string): Promise<void> => {
+  const { budgetId } = await requireBudget("editor");
+  const accountId = z.uuid().parse(rawAccountId);
+
+  const account = await db.query.account.findFirst({
+    where: and(eq(schema.account.id, accountId), eq(schema.account.budgetId, budgetId)),
+  });
+  if (!account) throw new Error(`No account ${accountId} in this budget`);
+
+  await db
+    .update(schema.account)
+    .set({ closed: true, updatedAt: new Date() })
+    .where(eq(schema.account.id, accountId));
+};
+
+/**
+ * Permanently removes an account - only ever safe for one with zero
+ * transactions, since there's nothing budget-relevant to lose. Every other
+ * table that references the account (categories, payees, scheduled
+ * transactions, bank connections) cascades on delete, so this is the one
+ * place a hard delete is offered rather than the reversible close above.
+ */
+export const deleteAccount = async (rawAccountId: string): Promise<void> => {
+  const { budgetId } = await requireBudget("editor");
+  const accountId = z.uuid().parse(rawAccountId);
+
+  const account = await db.query.account.findFirst({
+    where: and(eq(schema.account.id, accountId), eq(schema.account.budgetId, budgetId)),
+  });
+  if (!account) throw new Error(`No account ${accountId} in this budget`);
+
+  const anyTransaction = await db.query.transaction.findFirst({
+    where: eq(schema.transaction.accountId, accountId),
+    columns: { id: true },
+  });
+  if (anyTransaction) {
+    throw new Error("Only an account with no transactions can be permanently deleted.");
+  }
+
+  await db.delete(schema.account).where(eq(schema.account.id, accountId));
+};

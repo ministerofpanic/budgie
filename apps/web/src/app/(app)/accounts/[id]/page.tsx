@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getAccount, listAccounts } from "@/lib/dal/accounts";
 import { listForAccount } from "@/lib/dal/transactions";
 import { listCategoryGroups } from "@/lib/dal/categories";
+import { getBankConnection } from "@/lib/dal/bank-connection";
 import { Register } from "@/components/register/register";
 
 const AccountPage = async ({ params }: { readonly params: Promise<{ readonly id: string }> }) => {
@@ -10,10 +11,11 @@ const AccountPage = async ({ params }: { readonly params: Promise<{ readonly id:
   const account = await getAccount(id);
   if (!account) notFound();
 
-  const [transactions, groups, accounts] = await Promise.all([
+  const [transactions, groups, accounts, bankConnection] = await Promise.all([
     listForAccount(id),
     listCategoryGroups(),
     listAccounts(),
+    getBankConnection(id),
   ]);
 
   const categoryOptions = groups.flatMap((group) =>
@@ -28,6 +30,7 @@ const AccountPage = async ({ params }: { readonly params: Promise<{ readonly id:
       accounts={accounts}
       transactions={transactions}
       categoryOptions={categoryOptions}
+      bankConnection={bankConnection ?? null}
     />
   );
 };

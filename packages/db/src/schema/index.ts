@@ -5,6 +5,7 @@ export * from "./account.ts";
 export * from "./category.ts";
 export * from "./payee.ts";
 export * from "./import-batch.ts";
+export * from "./bank-connection.ts";
 export * from "./target.ts";
 export * from "./scheduled-transaction.ts";
 export * from "./transaction.ts";

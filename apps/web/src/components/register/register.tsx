@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useCallback, useState, useTransition } from "react";
-import { Check, Lock, Upload } from "lucide-react";
+import { Check, Lock, Trash2, Upload } from "lucide-react";
 
 import { format, unsafePence } from "@budgie/core/money";
 import type { AccountRow } from "@/lib/dal/accounts";
 import type { TransactionRow } from "@/lib/dal/transactions";
+import type { BankConnectionRow } from "@/lib/dal/bank-connection";
 import {
   deleteTransactionsAction,
   setTransactionClearedAction,
@@ -15,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TransactionForm } from "@/components/register/transaction-form";
 import { ReconcileForm } from "@/components/register/reconcile-form";
+import { BankLink } from "@/components/register/bank-link";
+import { DeleteAccountDialog } from "@/components/register/delete-account-dialog";
 
 const money = (pence: number) => format(unsafePence(pence));
 
@@ -120,15 +123,18 @@ const Register = ({
   account,
   transactions,
   categoryOptions,
+  bankConnection,
 }: {
   readonly account: AccountRow;
   readonly accounts: readonly AccountRow[];
   readonly transactions: readonly TransactionRow[];
   readonly categoryOptions: readonly CategoryOption[];
+  readonly bankConnection: BankConnectionRow | null;
 }) => {
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [showAddForm, setShowAddForm] = useState(false);
   const [showReconcile, setShowReconcile] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
   const [pending, startTransition] = useTransition();
   const [bulkAction, setBulkAction] = useState<"cleared" | "uncleared" | "delete" | null>(null);
 
@@ -169,6 +175,7 @@ const Register = ({
   const closeAddForm = useCallback(() => setShowAddForm(false), []);
   const toggleReconcile = useCallback(() => setShowReconcile((value) => !value), []);
   const closeReconcile = useCallback(() => setShowReconcile(false), []);
+  const openDelete = useCallback(() => setShowDelete(true), []);
 
   return (
     <>
@@ -179,7 +186,8 @@ const Register = ({
             {account.type}
           </Badge>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <BankLink accountId={account.id} bankConnection={bankConnection} />
           <Button asChild type="button" size="sm" variant="outline">
             <Link href={`/accounts/${account.id}/import`}>
               <Upload className="size-3.5" />
@@ -189,11 +197,28 @@ const Register = ({
           <Button type="button" size="sm" variant="outline" onClick={toggleReconcile}>
             {showReconcile ? "Close" : "Reconcile"}
           </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={openDelete}
+            aria-label="Remove account"
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
           <Button type="button" size="sm" onClick={toggleAddForm}>
             {showAddForm ? "Close" : "Add transaction"}
           </Button>
         </div>
       </header>
+
+      <DeleteAccountDialog
+        open={showDelete}
+        onOpenChange={setShowDelete}
+        accountId={account.id}
+        accountName={account.name}
+        hasTransactions={transactions.length > 0}
+      />
 
       {showReconcile ? <ReconcileForm accountId={account.id} onDone={closeReconcile} /> : null}
 

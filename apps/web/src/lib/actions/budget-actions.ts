@@ -16,6 +16,16 @@ export const createAccountAction = async (name: string, type: unknown) => {
   return account;
 };
 
+export const closeAccountAction = async (accountId: string) => {
+  await accounts.closeAccount(accountId);
+  revalidatePath("/", "layout");
+};
+
+export const deleteAccountAction = async (accountId: string) => {
+  await accounts.deleteAccount(accountId);
+  revalidatePath("/", "layout");
+};
+
 export const assignCategoryAction = async (
   categoryId: string,
   month: string,
