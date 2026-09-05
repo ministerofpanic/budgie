@@ -117,7 +117,6 @@ export const createRequisition = async (
         institution_id: params.institutionId,
         max_historical_days: 730,
         access_valid_for_days: 90,
-        access_scopes: ["balances", "details", "transactions"],
       }),
     },
   );
