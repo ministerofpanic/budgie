@@ -16,6 +16,12 @@ export const createAccountAction = async (name: string, type: unknown) => {
   return account;
 };
 
+export const renameAccountAction = async (accountId: string, name: string) => {
+  const account = await accounts.renameAccount(accountId, name);
+  revalidatePath("/", "layout");
+  return account;
+};
+
 export const closeAccountAction = async (accountId: string) => {
   await accounts.closeAccount(accountId);
   revalidatePath("/", "layout");

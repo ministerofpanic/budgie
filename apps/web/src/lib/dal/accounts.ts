@@ -92,6 +92,21 @@ export const createAccount = async (rawName: string, rawType: unknown): Promise<
   return account;
 };
 
+export const renameAccount = async (rawAccountId: string, rawName: string): Promise<AccountRow> => {
+  const { budgetId } = await requireBudget("editor");
+  const accountId = z.uuid().parse(rawAccountId);
+  const name = nameSchema.parse(rawName);
+
+  const [account] = await db
+    .update(schema.account)
+    .set({ name, updatedAt: new Date() })
+    .where(and(eq(schema.account.id, accountId), eq(schema.account.budgetId, budgetId)))
+    .returning();
+  if (!account) throw new Error(`No account ${accountId} in this budget`);
+
+  return account;
+};
+
 /** Closing hides the account from the active list and stops new transactions
  * against it, but keeps its history and any budget impact intact - the
  * default, reversible way to retire an account. */

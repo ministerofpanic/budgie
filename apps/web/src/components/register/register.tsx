@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useState, useTransition } from "react";
-import { Check, Lock, Trash2, Upload } from "lucide-react";
+import { Check, ChevronDown, Lock, Pencil, Trash2, Upload } from "lucide-react";
 
 import { format, unsafePence } from "@budgie/core/money";
 import type { AccountRow } from "@/lib/dal/accounts";
@@ -14,10 +14,18 @@ import {
 } from "@/lib/actions/budget-actions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { TransactionForm } from "@/components/register/transaction-form";
 import { ReconcileForm } from "@/components/register/reconcile-form";
 import { BankLink } from "@/components/register/bank-link";
 import { DeleteAccountDialog } from "@/components/register/delete-account-dialog";
+import { RenameAccountDialog } from "@/components/register/rename-account-dialog";
 
 const money = (pence: number) => format(unsafePence(pence));
 
@@ -135,6 +143,7 @@ const Register = ({
   const [showAddForm, setShowAddForm] = useState(false);
   const [showReconcile, setShowReconcile] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [showRename, setShowRename] = useState(false);
   const [pending, startTransition] = useTransition();
   const [bulkAction, setBulkAction] = useState<"cleared" | "uncleared" | "delete" | null>(null);
 
@@ -176,6 +185,7 @@ const Register = ({
   const toggleReconcile = useCallback(() => setShowReconcile((value) => !value), []);
   const closeReconcile = useCallback(() => setShowReconcile(false), []);
   const openDelete = useCallback(() => setShowDelete(true), []);
+  const openRename = useCallback(() => setShowRename(true), []);
 
   return (
     <>
@@ -188,29 +198,45 @@ const Register = ({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <BankLink accountId={account.id} bankConnection={bankConnection} />
-          <Button asChild type="button" size="sm" variant="outline">
-            <Link href={`/accounts/${account.id}/import`}>
-              <Upload className="size-3.5" />
-              Import
-            </Link>
-          </Button>
-          <Button type="button" size="sm" variant="outline" onClick={toggleReconcile}>
-            {showReconcile ? "Close" : "Reconcile"}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={openDelete}
-            aria-label="Remove account"
-          >
-            <Trash2 className="size-3.5" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" size="sm" variant="outline" aria-label="More account actions">
+                <ChevronDown className="size-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={openRename}>
+                <Pencil className="size-4" />
+                Rename
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href={`/accounts/${account.id}/import`}>
+                  <Upload className="size-4" />
+                  Import
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={toggleReconcile}>
+                {showReconcile ? "Close reconcile" : "Reconcile"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" onClick={openDelete}>
+                <Trash2 className="size-4" />
+                Remove account
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button type="button" size="sm" onClick={toggleAddForm}>
             {showAddForm ? "Close" : "Add transaction"}
           </Button>
         </div>
       </header>
+
+      <RenameAccountDialog
+        open={showRename}
+        onOpenChange={setShowRename}
+        accountId={account.id}
+        currentName={account.name}
+      />
 
       <DeleteAccountDialog
         open={showDelete}
