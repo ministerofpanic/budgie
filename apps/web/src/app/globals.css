@@ -164,6 +164,18 @@
     @apply border-border outline-ring/50;
   }
 
+  /* Tailwind sizes nearly everything in rem, so scaling the root font size
+     scales spacing, text and radii together - the same effect as the 125%
+     browser zoom this replaces, without relying on the browser setting.
+     Scoped to wider viewports: the budget grid and register are already a
+     tight fit at 100% on a narrow/mobile screen, and scaling them up there
+     overflows horizontally. */
+  @media (min-width: 640px) {
+    html {
+      font-size: 125%;
+    }
+  }
+
   body {
     @apply bg-background text-foreground;
   }
