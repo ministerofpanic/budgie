@@ -6,7 +6,7 @@ import { Check, ChevronDown, Lock, Pencil, Trash2, Upload } from "lucide-react";
 
 import { format, unsafePence } from "@budgie/core/money";
 import type { AccountRow } from "@/lib/dal/accounts";
-import type { TransactionRow } from "@/lib/dal/transactions";
+import type { TransactionRow, PageSize } from "@/lib/dal/transactions";
 import type { BankConnectionRow } from "@/lib/dal/bank-connection";
 import {
   deleteTransactionsAction,
@@ -26,6 +26,8 @@ import { ReconcileForm } from "@/components/register/reconcile-form";
 import { BankLink } from "@/components/register/bank-link";
 import { DeleteAccountDialog } from "@/components/register/delete-account-dialog";
 import { RenameAccountDialog } from "@/components/register/rename-account-dialog";
+import { RegisterSearch } from "@/components/register/register-search";
+import { RegisterPagination } from "@/components/register/register-pagination";
 
 const money = (pence: number) => format(unsafePence(pence));
 
@@ -132,12 +134,20 @@ const Register = ({
   transactions,
   categoryOptions,
   bankConnection,
+  totalCount,
+  page,
+  pageSize,
+  search,
 }: {
   readonly account: AccountRow;
   readonly accounts: readonly AccountRow[];
   readonly transactions: readonly TransactionRow[];
   readonly categoryOptions: readonly CategoryOption[];
   readonly bankConnection: BankConnectionRow | null;
+  readonly totalCount: number;
+  readonly page: number;
+  readonly pageSize: PageSize;
+  readonly search: string;
 }) => {
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [showAddForm, setShowAddForm] = useState(false);
@@ -292,6 +302,8 @@ const Register = ({
         </div>
       ) : null}
 
+      <RegisterSearch initialValue={search} />
+
       <div className="flex flex-col divide-y">
         {transactions.map((transaction) => (
           <TransactionListRow
@@ -304,9 +316,13 @@ const Register = ({
           />
         ))}
         {transactions.length === 0 ? (
-          <p className="text-muted-foreground py-8 text-center text-sm">No transactions yet.</p>
+          <p className="text-muted-foreground py-8 text-center text-sm">
+            {search ? "No transactions match your search." : "No transactions yet."}
+          </p>
         ) : null}
       </div>
+
+      <RegisterPagination page={page} pageSize={pageSize} totalCount={totalCount} />
     </>
   );
 };

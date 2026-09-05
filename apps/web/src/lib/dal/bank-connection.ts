@@ -15,6 +15,7 @@ import { computeImportFingerprint } from "@budgie/core/csv";
 
 import { requireBudget } from "@/lib/dal/budget";
 import { getAccount } from "@/lib/dal/accounts";
+import { recalculateRunningBalances } from "@/lib/dal/transactions";
 
 const env = (name: string): string => {
   const value = process.env[name];
@@ -293,6 +294,7 @@ export const syncBankTransactions = async (
     ),
   );
   const created = insertedRows.filter((rows) => rows.length > 0).length;
+  if (created > 0) await recalculateRunningBalances(accountId);
 
   await db
     .update(schema.importBatch)

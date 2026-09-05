@@ -10,6 +10,7 @@ import { z } from "zod";
 import { requireBudget } from "@/lib/dal/budget";
 import { getAccount, listAccounts } from "@/lib/dal/accounts";
 import { requireOwnedCategory } from "@/lib/dal/categories";
+import { recalculateRunningBalances } from "@/lib/dal/transactions";
 
 export type ScheduledTransactionRow = {
   readonly id: string;
@@ -195,6 +196,7 @@ export const enterNextOccurrence = async (
   const date = overrides?.date ?? schedule.nextDate;
 
   const transactionId = await insertEnteredTransaction(budgetId, schedule, date, amount.value);
+  await recalculateRunningBalances(schedule.accountId);
 
   const newNextDate = nextOccurrence(schedule.nextDate, schedule.frequency);
   await db
@@ -217,6 +219,8 @@ export const autoEnterDue = async (): Promise<void> => {
     where: eq(schema.scheduledTransaction.budgetId, budgetId),
   });
 
+  const touchedAccountIds = new Set<string>();
+
   await Promise.all(
     schedules.map(async (schedule) => {
       const due = occurrencesDue(schedule.nextDate, schedule.frequency, today);
@@ -227,6 +231,7 @@ export const autoEnterDue = async (): Promise<void> => {
           insertEnteredTransaction(budgetId, schedule, date, schedule.amountPence as Pence),
         ),
       );
+      touchedAccountIds.add(schedule.accountId);
       await db
         .update(schema.scheduledTransaction)
         .set({
@@ -236,5 +241,9 @@ export const autoEnterDue = async (): Promise<void> => {
         })
         .where(eq(schema.scheduledTransaction.id, schedule.id));
     }),
+  );
+
+  await Promise.all(
+    [...touchedAccountIds].map((accountId) => recalculateRunningBalances(accountId)),
   );
 };

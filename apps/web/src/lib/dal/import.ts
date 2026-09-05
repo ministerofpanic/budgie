@@ -16,6 +16,7 @@ import { z } from "zod";
 
 import { requireBudget } from "@/lib/dal/budget";
 import { getAccount } from "@/lib/dal/accounts";
+import { recalculateRunningBalances } from "@/lib/dal/transactions";
 
 const columnMappingSchema: z.ZodType<ColumnMapping> = z.object({
   dateColumn: z.number().int().min(0),
@@ -191,6 +192,7 @@ export const commitImport = async (
     ),
   );
   const created = insertedRows.filter((rows) => rows.length > 0).length;
+  if (created > 0) await recalculateRunningBalances(request.accountId);
 
   await db
     .update(schema.importBatch)
@@ -280,4 +282,5 @@ export const undoImportBatch = async (rawBatchId: string): Promise<void> => {
 
   await db.delete(schema.transaction).where(eq(schema.transaction.importBatchId, batchId));
   await db.delete(schema.importBatch).where(eq(schema.importBatch.id, batchId));
+  await recalculateRunningBalances(batch.accountId);
 };

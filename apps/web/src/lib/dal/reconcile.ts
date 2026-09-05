@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { requireBudget } from "@/lib/dal/budget";
 import { getAccount } from "@/lib/dal/accounts";
+import { recalculateRunningBalances } from "@/lib/dal/transactions";
 
 export type ReconcileError = { readonly kind: "invalid-amount" };
 
@@ -60,6 +61,7 @@ export const reconcileAccount = async (
       .returning();
     if (!adjustment) throw new Error("Failed to create adjustment transaction");
     idsToLock.push(adjustment.id);
+    await recalculateRunningBalances(accountId);
   }
 
   if (idsToLock.length > 0) {

@@ -45,7 +45,7 @@ test("reports reconcile with the transactions that produced them", async ({ page
   await page.getByRole("button", { name: "Add transaction" }).click();
   await page.getByLabel("Payee").fill("Employer");
   await page.getByLabel("Inflow").fill("200.00");
-  await page.getByRole("combobox").click();
+  await page.locator("form").getByRole("combobox").click();
   await page.getByRole("option", { name: "Internal: Inflow: Ready to Assign" }).click();
   await page.getByRole("button", { name: "Add transaction" }).click();
   await expect(page.getByText("Employer")).toBeVisible();
@@ -53,7 +53,7 @@ test("reports reconcile with the transactions that produced them", async ({ page
   await page.getByRole("button", { name: "Add transaction" }).click();
   await page.getByLabel("Payee").fill("Supermarket");
   await page.getByLabel("Outflow").fill("23.50");
-  await page.getByRole("combobox").click();
+  await page.locator("form").getByRole("combobox").click();
   await page.getByRole("option", { name: "Everyday: Groceries" }).click();
   await page.getByRole("button", { name: "Add transaction" }).click();
   await expect(page.getByText("Supermarket")).toBeVisible();

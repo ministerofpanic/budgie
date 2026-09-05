@@ -35,6 +35,13 @@ export const transaction = pgTable(
     memo: text("memo"),
     cleared: boolean("cleared").notNull().default(false),
     reconciled: boolean("reconciled").notNull().default(false),
+    // Denormalized: the account's running balance as of this row, in
+    // (date, id) order. Maintained by transactions.ts's
+    // recalculateRunningBalances after every write that changes amountPence,
+    // date, or row existence for the account - see that function for the
+    // full list of call sites. Exists so the register can page with a plain
+    // LIMIT/OFFSET instead of folding the whole account history per read.
+    runningBalancePence: integer("running_balance_pence").notNull().default(0),
     transferPairId: uuid("transfer_pair_id"),
     importHash: text("import_hash"),
     importBatchId: uuid("import_batch_id").references(() => importBatch.id, {
@@ -49,6 +56,7 @@ export const transaction = pgTable(
   },
   (t) => [
     index("transaction_budget_date_idx").on(t.budgetId, t.date),
+    index("transaction_account_date_id_idx").on(t.accountId, t.date, t.id),
     uniqueIndex("transaction_account_import_hash_idx")
       .on(t.accountId, t.importHash)
       .where(sql`${t.importHash} is not null`),
