@@ -29,6 +29,11 @@ const signUpFreshUser = async (page: Page, name: string) => {
 const csv =
   "Date,Payee,Memo,Amount\n2026-08-05,Supermarket,weekly shop,-45.23\n2026-08-10,Employer,salary,2500.00\n";
 
+const openImport = async (page: Page) => {
+  await page.getByRole("button", { name: "More account actions" }).click();
+  await page.getByRole("menuitem", { name: "Import" }).click();
+};
+
 const uploadCsv = async (page: Page) => {
   await page.locator('input[type="file"]').setInputFiles({
     name: "statement.csv",
@@ -45,7 +50,7 @@ test("the same CSV imports twice and produces no duplicates", async ({ page }) =
   await page.goto("/budget");
   await page.getByRole("button", { name: "Accounts" }).click();
   await page.getByRole("menuitem", { name: "Current Account" }).click();
-  await page.getByRole("link", { name: "Import" }).click();
+  await openImport(page);
   await expect(page).toHaveURL(/\/import$/);
 
   await uploadCsv(page);
@@ -60,7 +65,7 @@ test("the same CSV imports twice and produces no duplicates", async ({ page }) =
   await expect(page.getByText("Employer")).toBeVisible();
 
   // Re-upload the same file: every row should now be a duplicate.
-  await page.getByRole("link", { name: "Import" }).click();
+  await openImport(page);
   await uploadCsv(page);
   await page.getByRole("button", { name: "Preview" }).click();
   await expect(page.getByText("0 to create, 2 duplicates, 0 couldn't be parsed.")).toBeVisible();
@@ -74,7 +79,7 @@ test("undoing an import batch removes the transactions it created", async ({ pag
   await page.goto("/budget");
   await page.getByRole("button", { name: "Accounts" }).click();
   await page.getByRole("menuitem", { name: "Current Account" }).click();
-  await page.getByRole("link", { name: "Import" }).click();
+  await openImport(page);
 
   await uploadCsv(page);
   await page.getByRole("button", { name: "Preview" }).click();

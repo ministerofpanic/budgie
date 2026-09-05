@@ -42,7 +42,8 @@ test("reconciling creates an adjustment and locks cleared transactions", async (
 
   // Real-world balance is 5 lower than what's cleared (-10.00): reconcile
   // against -15.00, which should create a -5.00 adjustment.
-  await page.getByRole("button", { name: "Reconcile" }).click();
+  await page.getByRole("button", { name: "More account actions" }).click();
+  await page.getByRole("menuitem", { name: "Reconcile" }).click();
   await page.getByLabel("Real-world balance").fill("-15.00");
   await page.getByRole("button", { name: "Reconcile", exact: true }).click();
   await expect(page.getByText(/Created a -£5\.00 adjustment/)).toBeVisible();
