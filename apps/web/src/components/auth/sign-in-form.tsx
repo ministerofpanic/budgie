@@ -17,10 +17,26 @@ const SignInForm = () => {
     // focused - there's no button to click. A separate manual fallback
     // would race this request for the same server-side challenge cookie,
     // so this is the only sign-in path.
+    const startedAt = Date.now();
     const runConditionalSignIn = async () => {
       const result = await authClient.signIn.passkey({ autoFill: true });
-      if (result.data) router.push("/account/passkeys");
-      else if (result.error) setError(result.error.message ?? "Could not sign you in.");
+      if (result.data) {
+        router.push("/account/passkeys");
+        return;
+      }
+      if (!result.error) return;
+
+      // WebAuthn can't distinguish "no passkey exists for this origin" from
+      // a genuine user cancel at the API level - both surface as the same
+      // NotAllowedError, by spec design (so a site can't probe which
+      // accounts exist). The browser resolves near-instantly when there's
+      // simply nothing to offer (e.g. a passkey registered for production
+      // being tried against localhost), whereas an actual dismissed picker
+      // takes long enough for a person to see and close it. Only surface an
+      // error once enough time has passed to make that plausible.
+      const elapsedMs = Date.now() - startedAt;
+      if (elapsedMs < 1000) return;
+      setError(result.error.message ?? "Could not sign you in.");
     };
     void runConditionalSignIn();
   }, [router]);
