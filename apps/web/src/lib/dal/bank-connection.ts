@@ -1,5 +1,7 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
+
 import { db, schema } from "@budgie/db";
 import { and, eq, isNotNull } from "drizzle-orm";
 import { z } from "zod";
@@ -100,7 +102,13 @@ export const startBankLink = async (
   const requisition = await createRequisition(token.value, {
     institutionId,
     redirectUrl,
-    reference: accountId,
+    // GoCardless requires this to be unique across every requisition ever
+    // created with these credentials, not just currently-pending ones - the
+    // account id alone collides on a second attempt (a previous unfinished
+    // link, or relinking after disconnecting). We never read this value
+    // back (the callback identifies the account via the redirect URL's
+    // query param instead), so a fresh id per attempt is all it needs to be.
+    reference: randomUUID(),
   });
   if (!requisition.ok) {
     throw new Error(`Failed to create GoCardless requisition: ${requisition.error.kind}`);
