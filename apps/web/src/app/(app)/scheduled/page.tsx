@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { autoEnterDue, listUpcoming } from "@/lib/dal/scheduled-transactions";
 import { listCategoryGroups } from "@/lib/dal/categories";
 import { listAccounts } from "@/lib/dal/accounts";
 import { ScheduledList } from "@/components/scheduled/scheduled-list";
+
+export const metadata: Metadata = { title: "Scheduled" };
 
 const ScheduledPage = async () => {
   await autoEnterDue();

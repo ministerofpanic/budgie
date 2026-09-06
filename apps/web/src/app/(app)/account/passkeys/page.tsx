@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { requireSession } from "@/lib/session";
 import { listPasskeys } from "@/lib/passkeys";
 import { PasskeyManager } from "@/components/auth/passkey-manager";
 import { Button } from "@/components/ui/button";
+
+export const metadata: Metadata = { title: "Passkeys" };
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 // A stable reference rather than an inline `[]` fallback, so the array

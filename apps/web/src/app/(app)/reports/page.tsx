@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { compareMonths, monthRange, type MonthKey } from "@budgie/budget";
 
 import { requireBudget } from "@/lib/dal/budget";
@@ -7,6 +8,8 @@ import {
   getSpendingByCategory,
 } from "@/lib/dal/reports";
 import { ReportsView } from "@/components/reports/reports-view";
+
+export const metadata: Metadata = { title: "Reports" };
 
 const currentMonthKey = (): MonthKey => {
   const now = new Date();

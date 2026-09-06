@@ -4,11 +4,29 @@ import { GeistSans } from "geist/font/sans";
 
 import "./globals.css";
 
+const siteUrl = process.env["NEXT_PUBLIC_APP_URL"] ?? "http://localhost:3000";
+const description = "Give every pound a job, before you spend it.";
+
 export const metadata: Metadata = {
-  title: { default: "Budgie", template: "%s · Budgie" },
-  description: "Give every pound a job, before you spend it.",
+  metadataBase: new URL(siteUrl),
+  title: { default: "Budgie", template: "Budgie | %s" },
+  description,
   applicationName: "Budgie",
   appleWebApp: { capable: true, title: "Budgie", statusBarStyle: "default" },
+  // Self-hosted personal budgeting data - never meant to be publicly indexed.
+  robots: { index: false, follow: false },
+  openGraph: {
+    type: "website",
+    siteName: "Budgie",
+    title: "Budgie",
+    description,
+    url: siteUrl,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Budgie",
+    description,
+  },
 };
 
 export const viewport: Viewport = {

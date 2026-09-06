@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { getAccount, listAccounts } from "@/lib/dal/accounts";
@@ -5,6 +6,16 @@ import { listForAccount, pageSizes, type PageSize } from "@/lib/dal/transactions
 import { listCategoryGroups } from "@/lib/dal/categories";
 import { getBankConnection } from "@/lib/dal/bank-connection";
 import { Register } from "@/components/register/register";
+
+export const generateMetadata = async ({
+  params,
+}: {
+  readonly params: Promise<{ readonly id: string }>;
+}): Promise<Metadata> => {
+  const { id } = await params;
+  const account = await getAccount(id);
+  return { title: account?.name ?? "Account" };
+};
 
 const parsePage = (raw: string | undefined): number => {
   const parsed = Number(raw);

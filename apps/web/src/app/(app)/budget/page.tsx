@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { compareMonths } from "@budgie/budget";
 
 import { getBudgetMonth } from "@/lib/dal/budget-month";
 import { requireBudget } from "@/lib/dal/budget";
 import { BudgetGrid } from "@/components/budget/budget-grid";
+
+export const metadata: Metadata = { title: "Budget" };
 
 const currentMonthKey = (): string => {
   const now = new Date();
