@@ -206,3 +206,26 @@ export const requireBudget = async (minRole: BudgetRole = "viewer"): Promise<Bud
 
   return context;
 };
+
+/**
+ * `firstMonth` is meant to track the earliest data a budget actually has,
+ * not just whenever it happened to be created - a backdated CSV/bank import
+ * routinely predates that. Call after any write that can introduce an
+ * earlier transaction date than what's currently on record, so the budget
+ * grid (which refuses to compute or navigate before `firstMonth`) never
+ * strands data the user just imported. Widening only ever happens backward
+ * - never forward, never destructive.
+ */
+export const expandFirstMonthIfEarlier = async (
+  budgetId: string,
+  earliestDate: string,
+): Promise<void> => {
+  const candidate = `${earliestDate.slice(0, 7)}-01`;
+  const budget = await db.query.budget.findFirst({ where: eq(schema.budget.id, budgetId) });
+  if (!budget || candidate >= budget.firstMonth) return;
+
+  await db
+    .update(schema.budget)
+    .set({ firstMonth: candidate })
+    .where(eq(schema.budget.id, budgetId));
+};

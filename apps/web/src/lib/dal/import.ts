@@ -14,7 +14,7 @@ import { db, schema } from "@budgie/db";
 import { and, eq, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 
-import { requireBudget } from "@/lib/dal/budget";
+import { requireBudget, expandFirstMonthIfEarlier } from "@/lib/dal/budget";
 import { getAccount } from "@/lib/dal/accounts";
 import { recalculateRunningBalances } from "@/lib/dal/transactions";
 
@@ -192,7 +192,14 @@ export const commitImport = async (
     ),
   );
   const created = insertedRows.filter((rows) => rows.length > 0).length;
-  if (created > 0) await recalculateRunningBalances(request.accountId);
+  if (created > 0) {
+    await recalculateRunningBalances(request.accountId);
+    const earliestDate = toCreate.reduce(
+      (earliest, row) => (row.parsed.date < earliest ? row.parsed.date : earliest),
+      toCreate[0]!.parsed.date,
+    );
+    await expandFirstMonthIfEarlier(budgetId, earliestDate);
+  }
 
   await db
     .update(schema.importBatch)

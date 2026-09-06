@@ -15,7 +15,7 @@ import {
 } from "@budgie/core/gocardless";
 import { computeImportFingerprint } from "@budgie/core/csv";
 
-import { requireBudget } from "@/lib/dal/budget";
+import { requireBudget, expandFirstMonthIfEarlier } from "@/lib/dal/budget";
 import { getAccount } from "@/lib/dal/accounts";
 import { recalculateRunningBalances } from "@/lib/dal/transactions";
 
@@ -302,7 +302,14 @@ export const syncBankTransactions = async (
     ),
   );
   const created = insertedRows.filter((rows) => rows.length > 0).length;
-  if (created > 0) await recalculateRunningBalances(accountId);
+  if (created > 0) {
+    await recalculateRunningBalances(accountId);
+    const earliestDate = toCreate.reduce(
+      (earliest, tx) => (tx.date < earliest ? tx.date : earliest),
+      toCreate[0]!.date,
+    );
+    await expandFirstMonthIfEarlier(budgetId, earliestDate);
+  }
 
   await db
     .update(schema.importBatch)

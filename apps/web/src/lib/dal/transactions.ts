@@ -6,7 +6,7 @@ import { db, schema } from "@budgie/db";
 import { and, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
-import { requireBudget } from "@/lib/dal/budget";
+import { requireBudget, expandFirstMonthIfEarlier } from "@/lib/dal/budget";
 import { getAccount } from "@/lib/dal/accounts";
 import { pageSizes, type PageSize } from "@/lib/pagination";
 
@@ -282,6 +282,7 @@ export const createTransaction = async (
   }
 
   await recalculateRunningBalances(input.accountId);
+  await expandFirstMonthIfEarlier(budgetId, input.date);
 
   return ok({ id: transaction.id });
 };
@@ -338,6 +339,7 @@ export const updateTransaction = async (
 
   await recalculateRunningBalances(input.accountId);
   if (input.accountId !== existing.accountId) await recalculateRunningBalances(existing.accountId);
+  await expandFirstMonthIfEarlier(budgetId, input.date);
 
   return ok({ id });
 };
