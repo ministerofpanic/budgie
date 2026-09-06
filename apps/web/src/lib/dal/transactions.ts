@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { requireBudget, expandFirstMonthIfEarlier } from "@/lib/dal/budget";
 import { getAccount } from "@/lib/dal/accounts";
+import { findOrCreatePayee } from "@/lib/dal/payees";
 import { pageSizes, type PageSize } from "@/lib/pagination";
 
 export { pageSizes, type PageSize };
@@ -170,17 +171,6 @@ export const listForAccount = async (
   }));
 
   return { rows, totalCount };
-};
-
-const findOrCreatePayee = async (budgetId: string, name: string): Promise<string> => {
-  const existing = await db.query.payee.findFirst({
-    where: and(eq(schema.payee.budgetId, budgetId), eq(schema.payee.name, name)),
-  });
-  if (existing) return existing.id;
-
-  const [created] = await db.insert(schema.payee).values({ budgetId, name }).returning();
-  if (!created) throw new Error("Failed to create payee");
-  return created.id;
 };
 
 const splitInputSchema = z.object({ categoryId: z.uuid(), amountInput: z.string() });

@@ -18,6 +18,7 @@ import { computeImportFingerprint } from "@budgie/core/csv";
 import { requireBudget, expandFirstMonthIfEarlier } from "@/lib/dal/budget";
 import { getAccount } from "@/lib/dal/accounts";
 import { recalculateRunningBalances } from "@/lib/dal/transactions";
+import { findOrCreatePayee, rememberedCategoryForPayee } from "@/lib/dal/payees";
 
 const env = (name: string): string => {
   const value = process.env[name];
@@ -176,23 +177,6 @@ export const completeBankLink = async (rawAccountId: string): Promise<void> => {
     .where(eq(schema.bankConnection.accountId, accountId));
 };
 
-/** Safe to call concurrently for the same name: the unique (budget, name)
- * index means at most one insert wins, and the loser just re-selects. */
-const findOrCreatePayee = async (budgetId: string, name: string): Promise<string> => {
-  const [inserted] = await db
-    .insert(schema.payee)
-    .values({ budgetId, name })
-    .onConflictDoNothing({ target: [schema.payee.budgetId, schema.payee.name] })
-    .returning();
-  if (inserted) return inserted.id;
-
-  const existing = await db.query.payee.findFirst({
-    where: and(eq(schema.payee.budgetId, budgetId), eq(schema.payee.name, name)),
-  });
-  if (!existing) throw new Error(`Failed to find or create payee "${name}"`);
-  return existing.id;
-};
-
 export const syncBankTransactions = async (
   rawAccountId: string,
 ): Promise<{ readonly created: number; readonly skipped: number }> => {
@@ -279,16 +263,25 @@ export const syncBankTransactions = async (
       ),
     ),
   );
+  const rememberedCategoryByPayeeId = new Map(
+    await Promise.all(
+      [...payeeIdByName.values()].map(
+        async (payeeId) => [payeeId, await rememberedCategoryForPayee(payeeId)] as const,
+      ),
+    ),
+  );
 
   const insertedRows = await Promise.all(
-    toCreate.map((tx) =>
-      db
+    toCreate.map((tx) => {
+      const payeeId = tx.payeeName ? payeeIdByName.get(tx.payeeName) : undefined;
+      return db
         .insert(schema.transaction)
         .values({
           budgetId,
           accountId,
           date: tx.date,
-          payeeId: tx.payeeName ? payeeIdByName.get(tx.payeeName) : undefined,
+          payeeId,
+          categoryId: payeeId ? (rememberedCategoryByPayeeId.get(payeeId) ?? undefined) : undefined,
           memo: tx.memo,
           amountPence: tx.amountPence,
           importHash: computeImportFingerprint(accountId, tx.date, tx.amountPence, tx.payeeName),
@@ -298,8 +291,8 @@ export const syncBankTransactions = async (
           target: [schema.transaction.accountId, schema.transaction.importHash],
           where: isNotNull(schema.transaction.importHash),
         })
-        .returning({ id: schema.transaction.id }),
-    ),
+        .returning({ id: schema.transaction.id });
+    }),
   );
   const created = insertedRows.filter((rows) => rows.length > 0).length;
   if (created > 0) {

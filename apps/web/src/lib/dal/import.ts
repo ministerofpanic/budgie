@@ -17,6 +17,7 @@ import { z } from "zod";
 import { requireBudget, expandFirstMonthIfEarlier } from "@/lib/dal/budget";
 import { getAccount } from "@/lib/dal/accounts";
 import { recalculateRunningBalances } from "@/lib/dal/transactions";
+import { findOrCreatePayee, rememberedCategoryForPayee } from "@/lib/dal/payees";
 
 const columnMappingSchema: z.ZodType<ColumnMapping> = z.object({
   dateColumn: z.number().int().min(0),
@@ -105,23 +106,6 @@ export const previewImport = async (raw: unknown): Promise<readonly PreviewRow[]
   return classifyRows(request.accountId, dataRows, request.mapping, request.dateFormat);
 };
 
-/** Safe to call concurrently for the same name: the unique (budget, name)
- * index means at most one insert wins, and the loser just re-selects. */
-const findOrCreatePayee = async (budgetId: string, name: string): Promise<string> => {
-  const [inserted] = await db
-    .insert(schema.payee)
-    .values({ budgetId, name })
-    .onConflictDoNothing({ target: [schema.payee.budgetId, schema.payee.name] })
-    .returning();
-  if (inserted) return inserted.id;
-
-  const existing = await db.query.payee.findFirst({
-    where: and(eq(schema.payee.budgetId, budgetId), eq(schema.payee.name, name)),
-  });
-  if (!existing) throw new Error(`Failed to find or create payee "${name}"`);
-  return existing.id;
-};
-
 export const commitImport = async (
   raw: unknown,
   filename: string,
@@ -164,16 +148,25 @@ export const commitImport = async (
       ),
     ),
   );
+  const rememberedCategoryByPayeeId = new Map(
+    await Promise.all(
+      [...payeeIdByName.values()].map(
+        async (payeeId) => [payeeId, await rememberedCategoryForPayee(payeeId)] as const,
+      ),
+    ),
+  );
 
   const insertedRows = await Promise.all(
-    toCreate.map((row) =>
-      db
+    toCreate.map((row) => {
+      const payeeId = row.parsed.payeeName ? payeeIdByName.get(row.parsed.payeeName) : undefined;
+      return db
         .insert(schema.transaction)
         .values({
           budgetId,
           accountId: request.accountId,
           date: row.parsed.date,
-          payeeId: row.parsed.payeeName ? payeeIdByName.get(row.parsed.payeeName) : undefined,
+          payeeId,
+          categoryId: payeeId ? (rememberedCategoryByPayeeId.get(payeeId) ?? undefined) : undefined,
           memo: row.parsed.memo,
           amountPence: row.parsed.amountPence,
           importHash: computeImportFingerprint(
@@ -188,8 +181,8 @@ export const commitImport = async (
           target: [schema.transaction.accountId, schema.transaction.importHash],
           where: isNotNull(schema.transaction.importHash),
         })
-        .returning({ id: schema.transaction.id }),
-    ),
+        .returning({ id: schema.transaction.id });
+    }),
   );
   const created = insertedRows.filter((rows) => rows.length > 0).length;
   if (created > 0) {
