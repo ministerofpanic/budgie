@@ -126,11 +126,12 @@ const computeActivity = (
  *
  * Ready to Assign = inflows to on-budget accounts up to and including this
  * month, minus everything assigned up to and including this month, minus
- * last month's cash overspending (categories reset to zero rather than carry
- * a negative balance forward - the shortfall is deducted from the following
- * month's Ready to Assign instead). A payment category's negative balance is
- * the opposite: it carries forward as-is, since it represents real unfunded
- * card debt rather than a one-off overspend to be absorbed.
+ * this month's own cash overspending (categories reset to zero rather than
+ * carry a negative balance forward - the shortfall is deducted from Ready
+ * to Assign immediately, the same month it happens, matching YNAB). A
+ * payment category's negative balance is the opposite: it carries forward
+ * as-is, since it represents real unfunded card debt rather than a one-off
+ * overspend to be absorbed.
  */
 export const computeMonth = (input: BudgetInput, month: MonthKey): MonthResult => {
   if (compareMonths(month, input.firstMonth) < 0) {
@@ -145,7 +146,6 @@ export const computeMonth = (input: BudgetInput, month: MonthKey): MonthResult =
     input.categories.map((category) => [category.id, ZERO]),
   );
   let readyToAssign = ZERO;
-  let previousCashOverspend = ZERO;
 
   let result: MonthResult | undefined;
 
@@ -175,8 +175,6 @@ export const computeMonth = (input: BudgetInput, month: MonthKey): MonthResult =
 
     const inflow = inflowCategory === undefined ? ZERO : (activity.get(inflowCategory) ?? ZERO);
 
-    readyToAssign = subtract(add(readyToAssign, inflow), add(totalAssigned, previousCashOverspend));
-
     const nextCarriedIn = new Map<CategoryId, Pence>();
     let cashOverspend = ZERO;
     const categories: CategoryMonthResult[] = [];
@@ -196,8 +194,9 @@ export const computeMonth = (input: BudgetInput, month: MonthKey): MonthResult =
       categories.push({ categoryId: category.id, assigned, activity: categoryActivity, available });
     }
 
+    readyToAssign = subtract(add(readyToAssign, inflow), add(totalAssigned, cashOverspend));
+
     carriedIn = nextCarriedIn;
-    previousCashOverspend = cashOverspend;
     result = { month: currentMonth, readyToAssign, categories };
   }
 

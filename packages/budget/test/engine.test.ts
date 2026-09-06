@@ -137,16 +137,18 @@ describe("computeMonth - rollover", () => {
     expect(availableOf(month2.categories, "groceries")).toBe(p(6_000));
   });
 
-  it("cash overspending resets to zero and reduces the next month's Ready to Assign", () => {
+  it("cash overspending resets to zero and reduces Ready to Assign the same month", () => {
     const input = twoMonthInput(1_000, -3_000);
     const month1 = computeMonth(input, "2026-01");
     expect(availableOf(month1.categories, "groceries")).toBe(p(-2_000));
+    // Ready to Assign already reflects both the assign-with-no-inflow
+    // shortfall (-1,000) and this same month's 2,000 cash overspend -
+    // matching YNAB, the deduction is immediate, not deferred a month.
+    expect(month1.readyToAssign).toBe(p(-3_000));
 
     const month2 = computeMonth(input, "2026-02");
     expect(availableOf(month2.categories, "groceries")).toBe(p(0));
-    // Ready to Assign is a running total: month 1 already went to -1,000
-    // from assigning money with no inflow to back it, and month 2 docks a
-    // further 2,000 for the cash overspend on top of that.
+    // Nothing new happens in month 2, so the running total is unchanged.
     expect(month2.readyToAssign).toBe(p(-3_000));
   });
 });
@@ -192,9 +194,12 @@ describe("computeMonth - credit cards", () => {
 
   it("overspending on a card is cash-style overspend for the spending category", () => {
     const input = creditInput(1_000, -3_000);
+    const month1 = computeMonth(input, "2026-01");
+    // Same immediate-deduction reasoning as the cash-overspend case above.
+    expect(month1.readyToAssign).toBe(p(-3_000));
+
     const month2 = computeMonth(input, "2026-02");
     expect(availableOf(month2.categories, "dining")).toBe(p(0));
-    // Same running-total reasoning as the cash-overspend case above.
     expect(month2.readyToAssign).toBe(p(-3_000));
   });
 
@@ -339,8 +344,9 @@ describe("computeMonth - multi-month scenario", () => {
     expect(availableOf(month1.categories, "groceries")).toBe(p(8_000));
     expect(availableOf(month1.categories, "dining")).toBe(p(-3_000));
     expect(availableOf(month1.categories, "card-payment")).toBe(p(5_000));
-    // 300,000 inflow - 25,000 assigned (20,000 + 5,000), no prior overspend.
-    expect(month1.readyToAssign).toBe(p(275_000));
+    // 300,000 inflow - 25,000 assigned (20,000 + 5,000) - dining's own
+    // 3,000 overspend, deducted the same month it happens.
+    expect(month1.readyToAssign).toBe(p(272_000));
 
     const month2 = computeMonth(input, "2026-02");
     // Groceries: 8,000 carried in + 15,000 assigned, nothing spent.
@@ -349,13 +355,14 @@ describe("computeMonth - multi-month scenario", () => {
     expect(availableOf(month2.categories, "dining")).toBe(p(0));
     // Payment category: 5,000 carried in + 4,000 assigned - 6,000 paid.
     expect(availableOf(month2.categories, "card-payment")).toBe(p(3_000));
-    // No inflow, 19,000 assigned (15,000 + 4,000), minus dining's 3,000
-    // cash-style overspend from January.
-    expect(month2.readyToAssign).toBe(p(275_000 - 19_000 - 3_000));
+    // No inflow, 19,000 assigned (15,000 + 4,000) - dining's January
+    // overspend already landed in month 1's own total, so nothing further
+    // is deducted for it here.
+    expect(month2.readyToAssign).toBe(p(272_000 - 19_000));
 
     const month3 = computeMonth(input, "2026-03");
     expect(availableOf(month3.categories, "groceries")).toBe(p(33_000));
     expect(availableOf(month3.categories, "card-payment")).toBe(p(3_000));
-    expect(month3.readyToAssign).toBe(p(275_000 - 19_000 - 3_000 - 10_000));
+    expect(month3.readyToAssign).toBe(p(272_000 - 19_000 - 10_000));
   });
 });
