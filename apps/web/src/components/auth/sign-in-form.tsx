@@ -1,23 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { WebAuthnAbortService } from "@simplewebauthn/browser";
 
 import { authClient } from "@/lib/auth-client";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const SignInForm = () => {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
 
   useEffect(() => {
     // Conditional UI: the browser shows the account's saved passkeys inline
     // in its native autofill dropdown as soon as the email field is
-    // focused - there's no button to click. A separate manual fallback
-    // would race this request for the same server-side challenge cookie,
-    // so this is the only sign-in path.
+    // focused - there's no button to click for this first attempt. If it
+    // fails, the "Try again" button below triggers the same sign-in with
+    // autoFill off instead, which pops the full picker immediately.
     const startedAt = Date.now();
     const runConditionalSignIn = async () => {
       const result = await authClient.signIn.passkey({ autoFill: true });
@@ -50,13 +52,39 @@ const SignInForm = () => {
     return () => WebAuthnAbortService.cancelCeremony();
   }, [router]);
 
+  const retry = useCallback(() => {
+    setError(null);
+    setPending(true);
+    // The failed conditional request has already resolved by the time this
+    // button is visible, but cancel defensively in case the browser still
+    // considers it outstanding - see the effect cleanup above for why.
+    WebAuthnAbortService.cancelCeremony();
+
+    void (async () => {
+      const result = await authClient.signIn.passkey();
+      setPending(false);
+      if (result.data) {
+        router.push("/account/passkeys");
+        return;
+      }
+      if (result.error) setError(result.error.message ?? "Could not sign you in.");
+    })();
+  }, [router]);
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <Label htmlFor="email">Email</Label>
         <Input id="email" type="email" autoComplete="username webauthn" />
       </div>
-      {error ? <p className="text-destructive text-sm">{error}</p> : null}
+      {error ? (
+        <div className="flex flex-col gap-2">
+          <p className="text-destructive text-sm">{error}</p>
+          <Button type="button" variant="outline" loading={pending} onClick={retry}>
+            Try again
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 };
