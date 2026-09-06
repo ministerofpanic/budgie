@@ -12,7 +12,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-import { nextMonth, previousMonth, type Target } from "@budgie/budget";
+import { compareMonths, nextMonth, previousMonth, type Target } from "@budgie/budget";
 import { format, unsafePence } from "@budgie/core/money";
 import type { BudgetMonthView } from "@/lib/dal/budget-month";
 import {
@@ -563,21 +563,45 @@ const ColumnHeaders = () => (
   </div>
 );
 
-const MonthSwitcher = ({ month }: { readonly month: string }) => (
-  <div className="border-input bg-card inline-flex items-center gap-1 rounded-full border p-1 shadow-xs">
-    <Button asChild variant="ghost" size="icon" className="size-7 rounded-full">
-      <Link href={`/budget?month=${previousMonth(month)}`} aria-label="Previous month">
-        <ChevronLeft className="size-4" />
-      </Link>
-    </Button>
-    <p className="tabular w-24 text-center text-sm font-semibold">{month}</p>
-    <Button asChild variant="ghost" size="icon" className="size-7 rounded-full">
-      <Link href={`/budget?month=${nextMonth(month)}`} aria-label="Next month">
-        <ChevronRight className="size-4" />
-      </Link>
-    </Button>
-  </div>
-);
+const MonthSwitcher = ({
+  month,
+  firstMonth,
+}: {
+  readonly month: string;
+  readonly firstMonth: string;
+}) => {
+  const atFirstMonth = compareMonths(month, firstMonth) <= 0;
+
+  return (
+    <div className="border-input bg-card inline-flex items-center gap-1 rounded-full border p-1 shadow-xs">
+      {atFirstMonth ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-7 rounded-full"
+          disabled
+          aria-label="Previous month"
+          title="This is the budget's first month"
+        >
+          <ChevronLeft className="size-4" />
+        </Button>
+      ) : (
+        <Button asChild variant="ghost" size="icon" className="size-7 rounded-full">
+          <Link href={`/budget?month=${previousMonth(month)}`} aria-label="Previous month">
+            <ChevronLeft className="size-4" />
+          </Link>
+        </Button>
+      )}
+      <p className="tabular w-24 text-center text-sm font-semibold">{month}</p>
+      <Button asChild variant="ghost" size="icon" className="size-7 rounded-full">
+        <Link href={`/budget?month=${nextMonth(month)}`} aria-label="Next month">
+          <ChevronRight className="size-4" />
+        </Link>
+      </Button>
+    </div>
+  );
+};
 
 const ReadyToAssignCard = ({ readyToAssign }: { readonly readyToAssign: number }) => {
   const positive = readyToAssign >= 0;
@@ -670,7 +694,7 @@ const BudgetGrid = ({ view }: { readonly view: BudgetMonthView }) => {
   return (
     <>
       <div className="flex items-center justify-between">
-        <MonthSwitcher month={view.month} />
+        <MonthSwitcher month={view.month} firstMonth={view.firstMonth} />
         <Button
           type="button"
           variant="ghost"
