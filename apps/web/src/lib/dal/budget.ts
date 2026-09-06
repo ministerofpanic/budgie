@@ -226,6 +226,6 @@ export const expandFirstMonthIfEarlier = async (
 
   await db
     .update(schema.budget)
-    .set({ firstMonth: candidate })
+    .set({ firstMonth: candidate, updatedAt: new Date() })
     .where(eq(schema.budget.id, budgetId));
 };
