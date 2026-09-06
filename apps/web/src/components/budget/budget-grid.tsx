@@ -51,10 +51,12 @@ type NamedOption = { readonly id: string; readonly name: string };
 
 const AssignInput = ({
   categoryId,
+  categoryName,
   month,
   initial,
 }: {
   readonly categoryId: string;
+  readonly categoryName: string;
   readonly month: string;
   readonly initial: number;
 }) => {
@@ -66,7 +68,11 @@ const AssignInput = ({
     startTransition(async () => {
       const result = await assignCategoryAction(categoryId, month, value);
       if (!result.ok) {
-        setError("Not a valid amount");
+        setError(
+          result.error.kind === "negative-not-allowed"
+            ? "Can't assign below £0 - reduce it to zero instead"
+            : "Not a valid amount",
+        );
         return;
       }
       setError(null);
@@ -82,6 +88,7 @@ const AssignInput = ({
   return (
     <div className="flex flex-col items-end">
       <Input
+        aria-label={`Assigned for ${categoryName}`}
         inputMode="decimal"
         className="tabular h-8 w-24 text-right"
         value={value}
@@ -492,7 +499,13 @@ const CategoryRow = ({
     <div className="hover:bg-accent/40 -mx-2 rounded-lg px-2 py-2.5 transition-colors">
       <div className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-3">
         <p className="min-w-0 truncate text-sm font-medium">{category.name}</p>
-        <AssignInput categoryId={category.id} month={month} initial={category.assigned} />
+        <AssignInput
+          key={month}
+          categoryId={category.id}
+          categoryName={category.name}
+          month={month}
+          initial={category.assigned}
+        />
         <span className="tabular text-muted-foreground w-20 text-right text-sm">
           {money(category.activity)}
         </span>
