@@ -209,12 +209,22 @@ export const getAccountTransactions = async (
   if (!result.ok) return result;
 
   const transactions = result.value.body.transactions.booked.map((raw) => {
-    const payeeName = raw.creditorName ?? raw.debtorName ?? null;
+    // Bank data quality varies a lot by ASPSP: Starling populates
+    // creditorName/debtorName properly, but plenty of banks (Lloyds among
+    // them) never do, and put the actual payee text in
+    // remittanceInformationUnstructured instead - "KALUZA LTD" for a
+    // structured-name bank would be memo, but for one of these it's the
+    // only field that identifies who the transaction was with, so treat it
+    // as the payee rather than leaving the transaction unpayeed with the
+    // payee's name sitting in the memo instead.
+    const structuredPayeeName = raw.creditorName ?? raw.debtorName ?? null;
+    const payeeName = structuredPayeeName ?? raw.remittanceInformationUnstructured ?? null;
+    const memo = structuredPayeeName ? (raw.remittanceInformationUnstructured ?? null) : null;
     return {
       date: raw.bookingDate ?? raw.valueDate ?? "",
       amountPence: parseAmountPence(raw.transactionAmount.amount),
       payeeName,
-      memo: raw.remittanceInformationUnstructured ?? null,
+      memo,
       externalId: raw.transactionId ?? raw.internalTransactionId ?? "",
     };
   });

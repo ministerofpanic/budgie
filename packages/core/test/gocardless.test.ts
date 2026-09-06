@@ -57,6 +57,44 @@ describe("getAccountTransactions", () => {
     ]);
   });
 
+  it("falls back to remittance text as the payee when a bank never sends creditor/debtor names", async () => {
+    // Real shape from a live Lloyds Personal sync: no creditorName or
+    // debtorName at all (unlike Starling, which populates them), only
+    // remittanceInformationUnstructured - which is where the actual payee
+    // ("KALUZA LTD") turns out to live for this bank.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          transactions: {
+            booked: [
+              {
+                transactionId: "t1",
+                bookingDate: "2026-09-03",
+                transactionAmount: { amount: "-2484.98" },
+                remittanceInformationUnstructured: "KALUZA LTD",
+              },
+            ],
+          },
+        }),
+      ),
+    );
+
+    const result = await getAccountTransactions({ value: "token" }, "gc-account-1");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.transactions).toEqual([
+      {
+        date: "2026-09-03",
+        amountPence: p(-248498),
+        payeeName: "KALUZA LTD",
+        memo: null,
+        externalId: "t1",
+      },
+    ]);
+  });
+
   it("parses the account-scoped rate-limit headers", async () => {
     vi.stubGlobal(
       "fetch",
