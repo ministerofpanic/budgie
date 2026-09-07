@@ -38,7 +38,10 @@ export type BudgetMonthView = {
 
 const toMonthKey = (isoDate: string): MonthKey => isoDate.slice(0, 7);
 
-const loadBudgetInput = async (budgetId: string, firstMonth: MonthKey): Promise<BudgetInput> => {
+export const loadBudgetInput = async (
+  budgetId: string,
+  firstMonth: MonthKey,
+): Promise<BudgetInput> => {
   const [accounts, categories, transactions] = await Promise.all([
     db.query.account.findMany({ where: eq(schema.account.budgetId, budgetId) }),
     db.query.category.findMany({ where: eq(schema.category.budgetId, budgetId) }),

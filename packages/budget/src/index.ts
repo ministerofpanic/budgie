@@ -1,4 +1,5 @@
 export { computeMonth } from "./engine";
+export { computeAgeOfMoney } from "./age-of-money";
 export { computeTargetProgress } from "./target";
 export type { Target, TargetProgress } from "./target";
 export {

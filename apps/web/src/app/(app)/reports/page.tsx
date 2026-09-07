@@ -3,6 +3,7 @@ import { compareMonths, monthRange, type MonthKey } from "@budgie/budget";
 
 import { requireBudget } from "@/lib/dal/budget";
 import {
+  getAgeOfMoney,
   getIncomeVsExpenditure,
   getNetWorthByMonth,
   getSpendingByCategory,
@@ -42,10 +43,11 @@ const ReportsPage = async ({
     currentMonth,
   ).slice(-12);
 
-  const [spending, incomeVsExpenditure, netWorth] = await Promise.all([
+  const [spending, incomeVsExpenditure, netWorth, ageOfMoney] = await Promise.all([
     getSpendingByCategory(from, to),
     getIncomeVsExpenditure(from, to),
     getNetWorthByMonth(netWorthMonths),
+    getAgeOfMoney(),
   ]);
 
   return (
@@ -55,6 +57,7 @@ const ReportsPage = async ({
       spending={spending}
       incomeVsExpenditure={incomeVsExpenditure}
       netWorth={netWorth}
+      ageOfMoney={ageOfMoney}
     />
   );
 };

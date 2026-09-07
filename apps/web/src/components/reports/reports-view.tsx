@@ -1,4 +1,4 @@
-import { ArrowDownRight, ArrowUpRight, Scale, TrendingUp } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Hourglass, Scale, TrendingUp } from "lucide-react";
 
 import type { IncomeVsExpenditure, NetWorthPoint } from "@budgie/budget";
 import { format, unsafePence } from "@budgie/core/money";
@@ -37,11 +37,13 @@ const NetWorthChart = ({ points }: { readonly points: readonly NetWorthPoint[] }
 const StatCard = ({
   label,
   value,
+  displayValue,
   tone,
   icon: Icon,
 }: {
   readonly label: string;
-  readonly value: number;
+  readonly value?: number;
+  readonly displayValue?: string;
   readonly tone: "positive" | "negative" | "neutral";
   readonly icon: typeof ArrowUpRight;
 }) => {
@@ -58,7 +60,7 @@ const StatCard = ({
       </div>
       <div>
         <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">{label}</p>
-        <p className="tabular text-xl font-semibold">{money(value)}</p>
+        <p className="tabular text-xl font-semibold">{displayValue ?? money(value ?? 0)}</p>
       </div>
     </div>
   );
@@ -70,12 +72,14 @@ const ReportsView = ({
   spending,
   incomeVsExpenditure,
   netWorth,
+  ageOfMoney,
 }: {
   readonly from: string;
   readonly to: string;
   readonly spending: readonly SpendingByCategoryRow[];
   readonly incomeVsExpenditure: IncomeVsExpenditure;
   readonly netWorth: readonly NetWorthPoint[];
+  readonly ageOfMoney: number | null;
 }) => {
   const totalSpent = spending.reduce((sum, row) => sum + row.spentPence, 0);
   const spendingRows = spending.filter((row) => row.spentPence > 0);
@@ -121,6 +125,12 @@ const ReportsView = ({
           value={incomeVsExpenditure.netPence}
           tone={incomeVsExpenditure.netPence < 0 ? "negative" : "positive"}
           icon={Scale}
+        />
+        <StatCard
+          label="Age of Money"
+          displayValue={ageOfMoney === null ? "Not enough data yet" : `${String(ageOfMoney)} days`}
+          tone="neutral"
+          icon={Hourglass}
         />
       </div>
 

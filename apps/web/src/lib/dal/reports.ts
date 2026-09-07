@@ -1,6 +1,7 @@
 import "server-only";
 
 import {
+  computeAgeOfMoney,
   computeIncomeVsExpenditure,
   computeNetWorthByMonth,
   computeSpendingByCategory,
@@ -15,6 +16,7 @@ import { eq, inArray } from "drizzle-orm";
 
 import { requireBudget } from "@/lib/dal/budget";
 import { listCategoryGroups } from "@/lib/dal/categories";
+import { loadBudgetInput } from "@/lib/dal/budget-month";
 
 /**
  * One ledger line per transaction, or per split for a split transaction -
@@ -120,4 +122,18 @@ export const getNetWorthByMonth = async (
   const { budgetId } = await requireBudget();
   const lines = await loadLedgerLines(budgetId);
   return computeNetWorthByMonth(lines, months);
+};
+
+/**
+ * How many days old is the money consumed by the most recent spending
+ * transaction - always "as of now," unlike the other report functions'
+ * date-range filters. Uses the engine's `BudgetInput` shape (via the same
+ * loader `budget-month.ts` uses), not `loadLedgerLines` above - the
+ * FIFO/credit-card logic needs `onBudget` and transfer-vs-category
+ * distinctions `LedgerLine` doesn't carry.
+ */
+export const getAgeOfMoney = async (): Promise<number | null> => {
+  const { budgetId, firstMonth } = await requireBudget();
+  const input = await loadBudgetInput(budgetId, firstMonth.slice(0, 7));
+  return computeAgeOfMoney(input);
 };
