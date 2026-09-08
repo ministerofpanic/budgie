@@ -1,51 +1,63 @@
-# Budgie
+# Budgie 🐦
 
-Budgeting you actually own. A self-hosted YNAB-style budget: zero-based,
-shared between people, passkey sign-in, no payment wall anywhere.
+**Budgeting you actually own.**
 
-## Layout
+Budgie is a self-hosted, zero-based budgeting app: give every pound a job
+before you spend it, share a budget with the people you live your life with,
+and keep your financial data on infrastructure you control - not a
+subscription to a cloud service that can change its terms, get acquired, or
+disappear.
 
-| Path            | What it is                                               |
-| --------------- | -------------------------------------------------------- |
-| `apps/web`      | Next.js app (App Router), the only deployable            |
-| `packages/core` | Result type and money primitives - pure, dependency-free |
+## Features
+
+- **Zero-based budgeting.** Assign every pound to a category before you
+  spend it, with automatic rollover and proper credit-card handling
+  (spending on a card moves budgeted money into its payment category,
+  the way it should work).
+- **Real bank sync.** Connect UK/EU bank accounts via Open Banking and pull
+  transactions in automatically - no manual entry required.
+- **Multi-currency accounts.** Hold accounts in a different currency to your
+  budget's home currency, with exchange rates fetched and editable per
+  transaction.
+- **Works offline.** Installable as an app on your phone or desktop, keeps
+  working with no connection, and syncs safely once you're back online -
+  including detecting when someone else changed something while you were
+  offline, rather than silently overwriting it.
+- **Passkey sign-in.** No passwords to leak, ever. Falls back to a magic
+  link by email for devices that don't support passkeys.
+- **Shared budgets.** Invite the people you budget with, with owner/editor/
+  viewer roles.
+- **Your data is never locked in.** Import and export via CSV at any time.
+- **Reports that matter.** Spending by category, income vs. expenditure,
+  net worth over time, and Age of Money - a real measure of financial
+  cushion, not just a balance.
+
+No payment wall, anywhere in the product.
 
 ## Getting started
+
+You'll need a Postgres database - [Neon](https://neon.tech) has a free tier
+that works well.
 
 ```sh
 pnpm install
 cp .env.example .env
+# fill in DATABASE_URL and BETTER_AUTH_SECRET in .env
 pnpm dev
 ```
 
-## Commands
-
-| Command          | Does                                          |
-| ---------------- | --------------------------------------------- |
-| `pnpm dev`       | Next dev server                               |
-| `pnpm build`     | Turbo build across the workspace              |
-| `pnpm typecheck` | `tsc --noEmit` per package                    |
-| `pnpm test`      | Vitest per package                            |
-| `pnpm lint`      | oxlint                                        |
-| `pnpm format`    | oxfmt (write) / `pnpm format:check` to verify |
-
-## Conventions
-
-- **Money is integer pence.** Never floats. `@budgie/core/money` is the only
-  place amounts are parsed, formatted, or split.
-- **Errors are values.** `Result<T, E>` from `@budgie/core/result`, not throws,
-  for anything a user can cause.
-- **Types over interfaces**, composition over inheritance, no classes.
-- **Exact version pins only.** Third-party versions live in the `catalog:` block
-  in `pnpm-workspace.yaml`, so a version appears once in the whole repo.
-- **Supply chain:** `minimumReleaseAge` holds new releases for ~5 days before
-  they can be installed.
+Open [http://localhost:3000](http://localhost:3000) and sign up with a
+passkey. Bank sync (GoCardless) and magic-link email (Resend) are optional -
+the app runs fully without them, you'll just be limited to passkey sign-in
+and manual/CSV transaction entry until you add those keys.
 
 ## Deploying
 
-Netlify, from git. Set the package directory to `apps/web`; the base directory
-stays at the repo root so pnpm workspaces resolve. `apps/web/netlify.toml`
-carries the build command and publish directory. The Next.js adapter is
-deliberately unpinned - Netlify tracks it per build.
+Runs on [Netlify](https://netlify.com)'s free tier. Set the package
+directory to `apps/web` with the base directory at the repo root; see
+`.env.example` for the environment variables to set.
 
-Environment variables required in Netlify: see `.env.example`.
+## Development
+
+See `CLAUDE.md` for the project's technical conventions, architecture
+decisions, and workflow if you're contributing or poking around the code.
