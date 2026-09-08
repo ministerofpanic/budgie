@@ -18,6 +18,12 @@ const magicLinkHtml = (url: string): string => `
   <p>If you didn't request this, you can safely ignore this email.</p>
 `;
 
+// A plain-text alternative alongside the HTML body - HTML-only mail from a
+// brand-new sending domain is a common spam signal, and a multipart email
+// with both parts reads as more legitimate to most filters.
+const magicLinkText = (url: string): string =>
+  `Sign in to Budgie by opening the link below. It expires in 5 minutes.\n\n${url}\n\nIf you didn't request this, you can safely ignore this email.`;
+
 /** Sends the magic-link sign-in email via Resend's REST API - a single call
  * type, so a raw `fetch` is simpler than pulling in Resend's SDK (same
  * reasoning as `gocardless.ts`/`exchange-rate.ts` in @budgie/core). */
@@ -38,6 +44,7 @@ export const sendMagicLinkEmail = async (
           to: email,
           subject: "Sign in to Budgie",
           html: magicLinkHtml(url),
+          text: magicLinkText(url),
         }),
       }),
     (thrown) => ({

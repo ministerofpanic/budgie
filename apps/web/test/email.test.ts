@@ -37,11 +37,13 @@ describe("sendMagicLinkEmail", () => {
       to: string;
       subject: string;
       html: string;
+      text: string;
     };
     expect(body.from).toBe("Budgie <sign-in@example.test>");
     expect(body.to).toBe("person@example.test");
     expect(body.subject).toBe("Sign in to Budgie");
     expect(body.html).toContain("https://budgie.test/verify");
+    expect(body.text).toContain("https://budgie.test/verify");
   });
 
   it("returns an http error rather than throwing on a non-2xx response", async () => {
