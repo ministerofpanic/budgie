@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import {
   Bird,
@@ -10,15 +10,18 @@ import {
   KeyRound,
   Landmark,
   LayoutGrid,
+  LogOut,
   PieChart,
   Plus,
   Repeat,
+  UserRound,
   Users,
 } from "lucide-react";
 
 import type { AccountRow } from "@/lib/dal/accounts";
 import type { MembershipRow } from "@/lib/dal/budget";
 import { switchBudgetAction } from "@/lib/actions/sharing-actions";
+import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -155,16 +158,61 @@ const BudgetSwitcher = ({
   );
 };
 
+const UserMenu = ({
+  userName,
+  userEmail,
+}: {
+  readonly userName: string;
+  readonly userEmail: string;
+}) => {
+  const router = useRouter();
+
+  const handleSignOut = useCallback(() => {
+    void authClient.signOut().then(() => router.push("/sign-in"));
+  }, [router]);
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="Account">
+          <UserRound className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <div className="px-2 py-1.5">
+          <p className="truncate text-sm font-medium">{userName}</p>
+          <p className="text-muted-foreground truncate text-xs">{userEmail}</p>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/account/passkeys">
+            <KeyRound className="size-4" />
+            Passkeys
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleSignOut}>
+          <LogOut className="size-4" />
+          Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
 const AppHeader = ({
   accounts,
   memberships,
   activeBudgetId,
   budgetCurrency,
+  userName,
+  userEmail,
 }: {
   readonly accounts: readonly AccountRow[];
   readonly memberships: readonly MembershipRow[];
   readonly activeBudgetId: string;
   readonly budgetCurrency: string;
+  readonly userName: string;
+  readonly userEmail: string;
 }) => {
   const pathname = usePathname();
 
@@ -189,11 +237,7 @@ const AppHeader = ({
 
         <div className="ml-auto flex items-center gap-2">
           <BudgetSwitcher memberships={memberships} activeBudgetId={activeBudgetId} />
-          <Button asChild variant="ghost" size="icon" className="text-muted-foreground">
-            <Link href="/account/passkeys" aria-label="Passkeys">
-              <KeyRound className="size-4" />
-            </Link>
-          </Button>
+          <UserMenu userName={userName} userEmail={userEmail} />
         </div>
       </div>
     </header>
