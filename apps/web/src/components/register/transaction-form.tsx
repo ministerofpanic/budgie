@@ -37,6 +37,7 @@ const errorMessage = {
   "category-required": "Choose a category, or split across several.",
   "reconciled-locked": "This transaction is reconciled and locked - it can't be edited.",
   "invalid-exchange-rate": "Enter a valid exchange rate.",
+  conflict: "Someone else changed this transaction - reload and try again.",
 } as const;
 
 const CategorySelect = ({
