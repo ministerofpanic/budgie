@@ -93,9 +93,12 @@ Internal packages are consumed as TypeScript source (no build step), so
   conflicted replay surfaces in a "Resolve conflicts" banner rather than
   silently overwriting someone else's edit. Reports, Scheduled, Sharing,
   CSV import, and bank linking are deliberately online-only for now.
-  Production builds run webpack (`next build --webpack`), since Serwist's
-  webpack plugin doesn't yet support Turbopack; dev still uses Turbopack
-  (`disable` is set accordingly in `next.config.ts`).
+  Both dev and production builds run webpack explicitly (`next dev
+  --webpack`, `next build --webpack`) since Serwist's plugin doesn't yet
+  support Turbopack - it breaks under Turbopack even in dev. Serwist itself
+  is still only enabled for the production build (`disable:
+  process.env.NODE_ENV !== "production"` in `next.config.ts`), so dev never
+  compiles a real service worker.
 
 ## Environment
 
@@ -115,5 +118,3 @@ adding a new migration, same as any other branch.
 - shadcn components were hand-written to match new-york v4 because the
   scaffolding environment could not reach `ui.shadcn.com`. Locally, use
   `pnpm dlx shadcn add <component> --cwd apps/web` as normal.
-- Narrow-viewport rendering has not been verified yet - headless Chrome clamped
-  the window width. Check it properly once Playwright is in (phase 03).

@@ -10,9 +10,9 @@ const config: NextConfig = {
 const withSerwist = withSerwistInit({
   swSrc: "src/app/sw.ts",
   swDest: "public/sw.js",
-  // Dev runs on Turbopack (the Next 16 default), which this webpack-based
-  // plugin doesn't support - only the production build (`next build
-  // --webpack`, see package.json) compiles the service worker.
+  // Both dev and build run webpack explicitly (see package.json) since
+  // this plugin doesn't support Turbopack. Serwist itself stays disabled
+  // outside production so dev never compiles a real service worker.
   disable: process.env.NODE_ENV !== "production",
 });
 
