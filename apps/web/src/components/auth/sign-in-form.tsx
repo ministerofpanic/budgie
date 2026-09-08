@@ -11,8 +11,11 @@ import { Label } from "@/components/ui/label";
 
 const SignInForm = () => {
   const router = useRouter();
+  const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [magicLinkPending, setMagicLinkPending] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   useEffect(() => {
     // Conditional UI: the browser shows the account's saved passkeys inline
@@ -52,6 +55,10 @@ const SignInForm = () => {
     return () => WebAuthnAbortService.cancelCeremony();
   }, [router]);
 
+  const handleEmailChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(event.target.value);
+  }, []);
+
   const retry = useCallback(() => {
     setError(null);
     setPending(true);
@@ -71,11 +78,40 @@ const SignInForm = () => {
     })();
   }, [router]);
 
+  const sendMagicLink = useCallback(async () => {
+    setError(null);
+    setMagicLinkPending(true);
+    const { error: magicLinkError } = await authClient.signIn.magicLink({
+      email,
+      callbackURL: "/account/passkeys",
+    });
+    setMagicLinkPending(false);
+    if (magicLinkError) {
+      setError(magicLinkError.message ?? "Could not send the sign-in email. Try again.");
+      return;
+    }
+    setMagicLinkSent(true);
+  }, [email]);
+
+  if (magicLinkSent) {
+    return (
+      <p className="text-sm">
+        Check <strong>{email}</strong> for a sign-in link. It expires in 5 minutes.
+      </p>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" type="email" autoComplete="username webauthn" />
+        <Input
+          id="email"
+          type="email"
+          autoComplete="username webauthn"
+          value={email}
+          onChange={handleEmailChange}
+        />
       </div>
       {error ? (
         <div className="flex flex-col gap-2">
@@ -85,6 +121,18 @@ const SignInForm = () => {
           </Button>
         </div>
       ) : null}
+      <Button
+        type="button"
+        variant="outline"
+        loading={magicLinkPending}
+        disabled={!email}
+        onClick={sendMagicLink}
+      >
+        Email me a link instead
+      </Button>
+      <p className="text-muted-foreground text-xs">
+        No passkey support on this device or browser? Use email instead.
+      </p>
     </div>
   );
 };

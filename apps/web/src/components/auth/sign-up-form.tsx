@@ -14,6 +14,8 @@ const SignUpForm = () => {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [magicLinkPending, setMagicLinkPending] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   const handleNameChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setName(event.target.value);
@@ -47,6 +49,31 @@ const SignUpForm = () => {
     [name, email, router],
   );
 
+  const sendMagicLink = useCallback(async () => {
+    setError(null);
+    setMagicLinkPending(true);
+    const { error: magicLinkError } = await authClient.signIn.magicLink({
+      email,
+      name,
+      callbackURL: "/account/passkeys?welcome=1",
+    });
+    setMagicLinkPending(false);
+    if (magicLinkError) {
+      setError(magicLinkError.message ?? "Could not send the sign-up email. Try again.");
+      return;
+    }
+    setMagicLinkSent(true);
+  }, [email, name]);
+
+  if (magicLinkSent) {
+    return (
+      <p className="text-sm">
+        Check <strong>{email}</strong> for a link to finish creating your account. It expires in 5
+        minutes.
+      </p>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
@@ -68,6 +95,19 @@ const SignUpForm = () => {
       <Button type="submit" loading={pending}>
         {pending ? "Creating account..." : "Create account with a passkey"}
       </Button>
+      <Button
+        type="button"
+        variant="outline"
+        loading={magicLinkPending}
+        disabled={!name || !email}
+        onClick={sendMagicLink}
+      >
+        Email me a link instead
+      </Button>
+      <p className="text-muted-foreground text-xs">
+        No passkey support on this device or browser? Use email instead - you can always add a
+        passkey later from a device that supports one.
+      </p>
     </form>
   );
 };

@@ -29,7 +29,9 @@ const PasskeysPage = async ({
           <CardTitle>Your passkeys</CardTitle>
           <CardDescription>
             {welcome
-              ? `Welcome, ${session.user.name}. A second passkey is optional, but worth adding - losing your only one means losing the account. You can always add one later from here.`
+              ? passkeys.length === 0
+                ? `Welcome, ${session.user.name}. If this device supports it, adding a passkey means faster sign-in next time - optional, and you can always add one later from here.`
+                : `Welcome, ${session.user.name}. A second passkey is optional, but worth adding - losing your only one means losing the account. You can always add one later from here.`
               : "Manage the passkeys signed in to this account."}
           </CardDescription>
         </CardHeader>

@@ -3,10 +3,13 @@ import { randomUUID } from "node:crypto";
 import { betterAuth, APIError } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
+import { magicLink } from "better-auth/plugins";
 import { passkey } from "@better-auth/passkey";
 import { db, schema } from "@budgie/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+
+import { sendMagicLinkEmail } from "@/lib/email";
 
 const env = (name: string): string => {
   const value = process.env[name];
@@ -60,6 +63,21 @@ export const auth = betterAuth({
 
           return { id: created.id, name: created.name, displayName: created.name };
         },
+      },
+    }),
+    // Fallback for browsers/devices without WebAuthn support (e.g. some
+    // Android in-app browsers) - always offered alongside passkeys, never
+    // in place of them. `disableSignUp` is left at its default `false` so
+    // a magic link can create a brand-new account too, not just sign an
+    // existing one in.
+    magicLink({
+      sendMagicLink: async ({ email, url }) => {
+        const result = await sendMagicLinkEmail(email, url);
+        if (!result.ok) {
+          throw new APIError("INTERNAL_SERVER_ERROR", {
+            message: "Could not send the sign-in email. Try again.",
+          });
+        }
       },
     }),
     nextCookies(),

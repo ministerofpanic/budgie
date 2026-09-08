@@ -57,9 +57,14 @@ Internal packages are consumed as TypeScript source (no build step), so
 - **Credit cards are in v1**, with YNAB's payment-category behaviour: spending
   on a credit card moves budgeted money into that card's payment category.
 - **Hand-rolled `Result`**, no `neverthrow`.
-- **Passkeys only.** Better Auth + its passkey plugin, Drizzle adapter. No
-  passwords, no email fallback. Recovery is "register a second passkey", so the
-  sign-up flow must push for that.
+- **Passkeys first, magic link as the fallback.** Better Auth + its passkey
+  plugin, Drizzle adapter. No passwords. Sign-up and sign-in always also
+  offer "Email me a link instead" (Better Auth's `magic-link` plugin, sent
+  via Resend) for devices/browsers without WebAuthn support - some Android
+  in-app browsers included. Passkeys stay the recommended path and the
+  sign-up flow still pushes for a second one for recovery; a magic-link
+  account can add a passkey later from `/account/passkeys` if the device
+  it's next opened on supports one.
 - **Domain: `budgie.mikeholloway.co.uk`.** Passkeys bind to the relying party
   ID, so `PASSKEY_RP_ID` is `localhost` in dev and `budgie.mikeholloway.co.uk`
   in production. Passkeys registered on a `*.netlify.app` preview will not work
