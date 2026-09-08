@@ -1,6 +1,8 @@
 {
   "name": "budgie",
   "private": true,
+  "description": "Self-hosted, zero-based budgeting - give every pound a job before you spend it.",
+  "author": "Mike Holloway",
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",

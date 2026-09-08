@@ -2,7 +2,7 @@ import { db } from "./client.ts";
 import * as schema from "./schema/index.ts";
 import { eq } from "drizzle-orm";
 
-const SEED_USER_ID = "seed-user-mike";
+const SEED_USER_ID = "seed-user";
 const SEED_BUDGET_NAME = "Seed Budget";
 
 async function seed() {
@@ -13,7 +13,7 @@ async function seed() {
   if (!existingUser) {
     await db.insert(schema.user).values({
       id: SEED_USER_ID,
-      name: "Mike Holloway",
+      name: "Seed User",
       email: "seed@budgie.test",
     });
   }
