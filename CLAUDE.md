@@ -102,6 +102,13 @@ Internal packages are consumed as TypeScript source (no build step), so
 Copy `.env.example` to `.env`. Neon pooled connection string, Better Auth
 secret, and the passkey relying-party settings.
 
+**CI uses a dedicated Neon branch** (`ci`, off the `budgie-us` project's
+`main` branch), not production - the `DATABASE_URL` GitHub Actions secret
+points at it. e2e tests create real, permanent rows, so this keeps that
+data out of production. Re-run migrations against the `ci` branch
+(`DATABASE_URL=<ci-branch-url> pnpm db:migrate` from `packages/db`) after
+adding a new migration, same as any other branch.
+
 ## Notes from the scaffold session
 
 - TypeScript is 7.x, the native compiler. Fast, and no issues with Next 16.
