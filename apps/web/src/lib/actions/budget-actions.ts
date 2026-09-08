@@ -9,9 +9,16 @@ import * as targets from "@/lib/dal/targets";
 import * as accounts from "@/lib/dal/accounts";
 import type { Result } from "@budgie/core/result";
 import type { Pence } from "@budgie/core/money";
+import { getExchangeRate, type ExchangeRateError } from "@budgie/core";
 
-export const createAccountAction = async (name: string, type: unknown) => {
-  const account = await accounts.createAccount(name, type);
+export const fetchExchangeRateAction = async (
+  from: string,
+  to: string,
+  date: string,
+): Promise<Result<number, ExchangeRateError>> => getExchangeRate(from, to, date);
+
+export const createAccountAction = async (name: string, type: unknown, currency?: string) => {
+  const account = await accounts.createAccount(name, type, currency);
   revalidatePath("/", "layout");
   return account;
 };

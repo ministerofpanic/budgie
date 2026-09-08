@@ -34,16 +34,21 @@ const accountTypeLabel = {
 
 type AccountType = keyof typeof accountTypeLabel;
 
+const commonCurrencies = ["GBP", "USD", "EUR", "CAD", "AUD", "CHF", "JPY", "NZD"] as const;
+
 const NewAccountDialog = ({
   open,
   onOpenChange,
+  defaultCurrency,
 }: {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
+  readonly defaultCurrency: string;
 }) => {
   const router = useRouter();
   const [name, setName] = useState("");
   const [type, setType] = useState<AccountType>("current");
+  const [currency, setCurrency] = useState(defaultCurrency);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -52,6 +57,7 @@ const NewAccountDialog = ({
     [],
   );
   const handleTypeChange = useCallback((value: string) => setType(value as AccountType), []);
+  const handleCurrencyChange = useCallback((value: string) => setCurrency(value), []);
 
   const submit = useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
@@ -59,17 +65,18 @@ const NewAccountDialog = ({
       setError(null);
       startTransition(async () => {
         try {
-          const account = await createAccountAction(name, type);
+          const account = await createAccountAction(name, type, currency);
           onOpenChange(false);
           setName("");
           setType("current");
+          setCurrency(defaultCurrency);
           router.push(`/accounts/${account.id}`);
         } catch {
           setError("Could not create that account.");
         }
       });
     },
-    [name, type, onOpenChange, router],
+    [name, type, currency, defaultCurrency, onOpenChange, router],
   );
 
   return (
@@ -103,6 +110,28 @@ const NewAccountDialog = ({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="new-account-currency">Currency</Label>
+            <Select value={currency} onValueChange={handleCurrencyChange}>
+              <SelectTrigger id="new-account-currency">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {commonCurrencies.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {currency !== defaultCurrency ? (
+              <p className="text-muted-foreground text-xs">
+                This budget's home currency is {defaultCurrency}. Transactions on this account will
+                be converted for budgeting and reports, using an exchange rate you can always edit.
+              </p>
+            ) : null}
           </div>
 
           {error ? <p className="text-destructive text-sm">{error}</p> : null}

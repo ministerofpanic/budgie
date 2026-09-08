@@ -10,6 +10,7 @@ export type AccountRow = {
   readonly id: string;
   readonly name: string;
   readonly type: (typeof schema.accountType.enumValues)[number];
+  readonly currency: string;
   readonly onBudget: boolean;
   readonly closed: boolean;
 };
@@ -31,6 +32,11 @@ export const getAccount = async (accountId: string): Promise<AccountRow | undefi
 
 const accountTypeSchema = z.enum(schema.accountType.enumValues);
 const nameSchema = z.string().trim().min(1, "Name is required.").max(80);
+const currencySchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(/^[A-Z]{3}$/, "Currency must be a 3-letter ISO code.");
 
 /** Every budget gets its "Internal" system category group lazily, the first
  * time something needs to put a category in it - originally just Inflow,
@@ -57,10 +63,15 @@ const requireInternalGroup = async (budgetId: string) => {
  * rule this engine leans on: spending on the card moves budgeted money into
  * that category rather than out of the category actually spent from.
  */
-export const createAccount = async (rawName: string, rawType: unknown): Promise<AccountRow> => {
-  const { budgetId } = await requireBudget("editor");
+export const createAccount = async (
+  rawName: string,
+  rawType: unknown,
+  rawCurrency?: string,
+): Promise<AccountRow> => {
+  const { budgetId, currency: budgetCurrency } = await requireBudget("editor");
   const name = nameSchema.parse(rawName);
   const type = accountTypeSchema.parse(rawType);
+  const currency = rawCurrency ? currencySchema.parse(rawCurrency) : budgetCurrency;
 
   const existing = await db.query.account.findMany({
     where: eq(schema.account.budgetId, budgetId),
@@ -69,7 +80,7 @@ export const createAccount = async (rawName: string, rawType: unknown): Promise<
 
   const [account] = await db
     .insert(schema.account)
-    .values({ budgetId, name, type, onBudget: type !== "tracking", sortOrder })
+    .values({ budgetId, name, type, currency, onBudget: type !== "tracking", sortOrder })
     .returning();
   if (!account) throw new Error("Failed to create account");
 

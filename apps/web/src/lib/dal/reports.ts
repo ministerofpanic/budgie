@@ -10,7 +10,7 @@ import {
   type MonthKey,
   type NetWorthPoint,
 } from "@budgie/budget";
-import { unsafePence } from "@budgie/core/money";
+import { unsafePence, type Pence } from "@budgie/core/money";
 import { db, schema } from "@budgie/db";
 import { eq, inArray } from "drizzle-orm";
 
@@ -24,6 +24,12 @@ import { loadBudgetInput } from "@/lib/dal/budget-month";
  * total can never drift from what the budget grid and register show for the
  * same transactions.
  */
+// Reports read home-currency amounts throughout, same conversion boundary
+// as loadBudgetInput - a foreign account's spending is reported at the
+// rate captured on the transaction, not re-priced at today's spot rate.
+const toHomePence = (amountPence: number, exchangeRate: string | null): Pence =>
+  unsafePence(exchangeRate === null ? amountPence : Math.round(amountPence * Number(exchangeRate)));
+
 const loadLedgerLines = async (budgetId: string): Promise<readonly LedgerLine[]> => {
   const transactions = await db.query.transaction.findMany({
     where: eq(schema.transaction.budgetId, budgetId),
@@ -50,7 +56,7 @@ const loadLedgerLines = async (budgetId: string): Promise<readonly LedgerLine[]>
         accountId: transaction.accountId,
         categoryId: transaction.categoryId,
         date: transaction.date,
-        amountPence: unsafePence(transaction.amountPence),
+        amountPence: toHomePence(transaction.amountPence, transaction.exchangeRate),
       });
       continue;
     }
@@ -62,7 +68,7 @@ const loadLedgerLines = async (budgetId: string): Promise<readonly LedgerLine[]>
           accountId: transaction.accountId,
           categoryId: split.categoryId,
           date: transaction.date,
-          amountPence: unsafePence(split.amountPence),
+          amountPence: toHomePence(split.amountPence, transaction.exchangeRate),
         });
       }
       continue;
@@ -74,7 +80,7 @@ const loadLedgerLines = async (budgetId: string): Promise<readonly LedgerLine[]>
       accountId: transaction.accountId,
       categoryId: null,
       date: transaction.date,
-      amountPence: unsafePence(transaction.amountPence),
+      amountPence: toHomePence(transaction.amountPence, transaction.exchangeRate),
     });
   }
   return lines;

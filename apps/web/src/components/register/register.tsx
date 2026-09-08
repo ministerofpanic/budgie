@@ -37,12 +37,16 @@ const TransactionListRow = ({
   transaction,
   categoryOptions,
   accountId,
+  accountCurrency,
+  budgetCurrency,
   selected,
   onToggleSelected,
 }: {
   readonly transaction: TransactionRow;
   readonly categoryOptions: readonly CategoryOption[];
   readonly accountId: string;
+  readonly accountCurrency: string;
+  readonly budgetCurrency: string;
   readonly selected: boolean;
   readonly onToggleSelected: (id: string) => void;
 }) => {
@@ -67,6 +71,8 @@ const TransactionListRow = ({
       <div className="py-2">
         <TransactionForm
           accountId={accountId}
+          accountCurrency={accountCurrency}
+          budgetCurrency={budgetCurrency}
           categoryOptions={categoryOptions}
           existing={transaction}
           onDone={stopEditing}
@@ -138,6 +144,7 @@ const Register = ({
   page,
   pageSize,
   search,
+  budgetCurrency,
 }: {
   readonly account: AccountRow;
   readonly accounts: readonly AccountRow[];
@@ -148,6 +155,7 @@ const Register = ({
   readonly page: number;
   readonly pageSize: PageSize;
   readonly search: string;
+  readonly budgetCurrency: string;
 }) => {
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [showAddForm, setShowAddForm] = useState(false);
@@ -261,6 +269,8 @@ const Register = ({
       {showAddForm ? (
         <TransactionForm
           accountId={account.id}
+          accountCurrency={account.currency}
+          budgetCurrency={budgetCurrency}
           categoryOptions={categoryOptions}
           onDone={closeAddForm}
         />
@@ -311,6 +321,8 @@ const Register = ({
             transaction={transaction}
             categoryOptions={categoryOptions}
             accountId={account.id}
+            accountCurrency={account.currency}
+            budgetCurrency={budgetCurrency}
             selected={selected.has(transaction.id)}
             onToggleSelected={toggleSelected}
           />

@@ -8,12 +8,14 @@ import { z } from "zod";
 import {
   createRequisition,
   getAccessToken,
+  getAccountDetails,
   getAccountTransactions,
   getRequisition,
   listInstitutions as gcListInstitutions,
   type GoCardlessCredentials,
 } from "@budgie/core/gocardless";
 import { computeImportFingerprint } from "@budgie/core/csv";
+import { getExchangeRate } from "@budgie/core/exchange-rate";
 
 import { requireBudget, expandFirstMonthIfEarlier } from "@/lib/dal/budget";
 import { getAccount } from "@/lib/dal/accounts";
@@ -175,13 +177,25 @@ export const completeBankLink = async (rawAccountId: string): Promise<void> => {
       updatedAt: new Date(),
     })
     .where(eq(schema.bankConnection.accountId, accountId));
+
+  // Seed the account's currency from the bank, if GoCardless reports one -
+  // otherwise it keeps whatever it was created with (the budget's currency).
+  const details = await getAccountDetails(token.value, gocardlessAccountId);
+  if (details.ok && details.value.currency) {
+    await db
+      .update(schema.account)
+      .set({ currency: details.value.currency, updatedAt: new Date() })
+      .where(eq(schema.account.id, accountId));
+  }
 };
 
 export const syncBankTransactions = async (
   rawAccountId: string,
 ): Promise<{ readonly created: number; readonly skipped: number }> => {
-  const { budgetId } = await requireBudget("editor");
+  const { budgetId, currency: budgetCurrency } = await requireBudget("editor");
   const accountId = z.uuid().parse(rawAccountId);
+  const account = await getAccount(accountId);
+  if (!account) throw new Error(`No account ${accountId} in this budget`);
 
   const connection = await db.query.bankConnection.findFirst({
     where: eq(schema.bankConnection.accountId, accountId),
@@ -242,6 +256,19 @@ export const syncBankTransactions = async (
   );
   if (toCreate.length === 0) return { created: 0, skipped: result.value.transactions.length };
 
+  // Historical rate per distinct transaction date, only when the account's
+  // currency differs from the budget's - the common case needs no lookups.
+  const rateByDate = new Map<string, number | null>();
+  if (account.currency !== budgetCurrency) {
+    const distinctDates = [...new Set(toCreate.map((tx) => tx.date))];
+    await Promise.all(
+      distinctDates.map(async (date) => {
+        const rate = await getExchangeRate(account.currency, budgetCurrency, date);
+        rateByDate.set(date, rate.ok ? rate.value : null);
+      }),
+    );
+  }
+
   const [batch] = await db
     .insert(schema.importBatch)
     .values({
@@ -284,6 +311,10 @@ export const syncBankTransactions = async (
           categoryId: payeeId ? (rememberedCategoryByPayeeId.get(payeeId) ?? undefined) : undefined,
           memo: tx.memo,
           amountPence: tx.amountPence,
+          exchangeRate: (() => {
+            const rate = rateByDate.get(tx.date);
+            return rate === undefined || rate === null ? null : String(rate);
+          })(),
           importHash: computeImportFingerprint(accountId, tx.date, tx.amountPence, tx.payeeName),
           importBatchId: batch.id,
         })

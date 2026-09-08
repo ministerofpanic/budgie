@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./csv": "./src/csv.ts",
+    "./exchange-rate": "./src/exchange-rate.ts",
     "./gocardless": "./src/gocardless.ts",
     "./money": "./src/money.ts",
     "./result": "./src/result.ts"

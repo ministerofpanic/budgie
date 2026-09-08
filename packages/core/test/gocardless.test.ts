@@ -43,6 +43,7 @@ describe("getAccountTransactions", () => {
       {
         date: "2026-08-01",
         amountPence: p(-2350),
+        currency: null,
         payeeName: "Supermarket",
         memo: null,
         externalId: "t1",
@@ -50,6 +51,7 @@ describe("getAccountTransactions", () => {
       {
         date: "2026-08-02",
         amountPence: p(10000),
+        currency: null,
         payeeName: "Employer",
         memo: null,
         externalId: "t2",
@@ -88,6 +90,7 @@ describe("getAccountTransactions", () => {
       {
         date: "2026-09-03",
         amountPence: p(-248498),
+        currency: null,
         payeeName: "KALUZA LTD",
         memo: null,
         externalId: "t1",

@@ -8,10 +8,10 @@ export type AppShellData = Awaited<ReturnType<typeof getAppShellData>>;
 /** The three things every authenticated page needs to render `AppHeader` -
  * fetched together since every page needs all three anyway. */
 export const getAppShellData = async () => {
-  const [{ budgetId }, accounts, memberships] = await Promise.all([
+  const [{ budgetId, currency }, accounts, memberships] = await Promise.all([
     requireBudget(),
     listAccounts(),
     listMemberships(),
   ]);
-  return { accounts, memberships, activeBudgetId: budgetId };
+  return { accounts, memberships, activeBudgetId: budgetId, budgetCurrency: currency };
 };

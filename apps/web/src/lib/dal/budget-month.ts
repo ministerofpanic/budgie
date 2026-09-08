@@ -11,7 +11,7 @@ import {
   type Target,
   type TargetProgress,
 } from "@budgie/budget";
-import { unsafePence } from "@budgie/core/money";
+import { unsafePence, type Pence } from "@budgie/core/money";
 import { db, schema } from "@budgie/db";
 import { eq, inArray } from "drizzle-orm";
 
@@ -37,6 +37,12 @@ export type BudgetMonthView = {
 };
 
 const toMonthKey = (isoDate: string): MonthKey => isoDate.slice(0, 7);
+
+// The engine only ever sees home-currency pence - conversion happens here,
+// at the data-loading boundary, so engine.ts stays currency-agnostic.
+// exchangeRate is null for same-currency accounts (the common case).
+const toHomePence = (amountPence: number, exchangeRate: string | null): Pence =>
+  unsafePence(exchangeRate === null ? amountPence : Math.round(amountPence * Number(exchangeRate)));
 
 export const loadBudgetInput = async (
   budgetId: string,
@@ -81,7 +87,10 @@ export const loadBudgetInput = async (
         accountId: transaction.accountId,
         date: transaction.date,
         entries: [
-          { categoryId: transaction.categoryId, amountPence: unsafePence(transaction.amountPence) },
+          {
+            categoryId: transaction.categoryId,
+            amountPence: toHomePence(transaction.amountPence, transaction.exchangeRate),
+          },
         ],
       });
       continue;
@@ -98,7 +107,7 @@ export const loadBudgetInput = async (
           .filter((split) => categoryIdSet.has(split.categoryId))
           .map((split) => ({
             categoryId: split.categoryId,
-            amountPence: unsafePence(split.amountPence),
+            amountPence: toHomePence(split.amountPence, transaction.exchangeRate),
           })),
       });
     }

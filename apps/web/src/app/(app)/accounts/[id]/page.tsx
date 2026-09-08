@@ -5,6 +5,7 @@ import { getAccount, listAccounts } from "@/lib/dal/accounts";
 import { listForAccount, pageSizes, type PageSize } from "@/lib/dal/transactions";
 import { listCategoryGroups } from "@/lib/dal/categories";
 import { getBankConnection } from "@/lib/dal/bank-connection";
+import { requireBudget } from "@/lib/dal/budget";
 import { Register } from "@/components/register/register";
 
 export const generateMetadata = async ({
@@ -47,12 +48,14 @@ const AccountPage = async ({
   const account = await getAccount(id);
   if (!account) notFound();
 
-  const [{ rows: transactions, totalCount }, groups, accounts, bankConnection] = await Promise.all([
-    listForAccount({ accountId: id, page, pageSize, ...(search ? { search } : {}) }),
-    listCategoryGroups(),
-    listAccounts(),
-    getBankConnection(id),
-  ]);
+  const [{ rows: transactions, totalCount }, groups, accounts, bankConnection, { currency }] =
+    await Promise.all([
+      listForAccount({ accountId: id, page, pageSize, ...(search ? { search } : {}) }),
+      listCategoryGroups(),
+      listAccounts(),
+      getBankConnection(id),
+      requireBudget(),
+    ]);
 
   const categoryOptions = groups.flatMap((group) =>
     group.categories
@@ -67,6 +70,7 @@ const AccountPage = async ({
       transactions={transactions}
       categoryOptions={categoryOptions}
       bankConnection={bankConnection ?? null}
+      budgetCurrency={currency}
       totalCount={totalCount}
       page={page}
       pageSize={pageSize}

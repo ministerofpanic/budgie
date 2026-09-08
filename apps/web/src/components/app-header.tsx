@@ -69,9 +69,11 @@ const NavLink = ({
 const AccountsMenu = ({
   accounts,
   active,
+  budgetCurrency,
 }: {
   readonly accounts: readonly AccountRow[];
   readonly active: boolean;
+  readonly budgetCurrency: string;
 }) => {
   const [newAccountOpen, setNewAccountOpen] = useState(false);
   const openNewAccount = useCallback(() => setNewAccountOpen(true), []);
@@ -104,7 +106,11 @@ const AccountsMenu = ({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <NewAccountDialog open={newAccountOpen} onOpenChange={setNewAccountOpen} />
+      <NewAccountDialog
+        open={newAccountOpen}
+        onOpenChange={setNewAccountOpen}
+        defaultCurrency={budgetCurrency}
+      />
     </>
   );
 };
@@ -146,10 +152,12 @@ const AppHeader = ({
   accounts,
   memberships,
   activeBudgetId,
+  budgetCurrency,
 }: {
   readonly accounts: readonly AccountRow[];
   readonly memberships: readonly MembershipRow[];
   readonly activeBudgetId: string;
+  readonly budgetCurrency: string;
 }) => {
   const pathname = usePathname();
 
@@ -165,7 +173,11 @@ const AppHeader = ({
           {navItems.map((item) => (
             <NavLink key={item.href} {...item} active={pathname.startsWith(item.href)} />
           ))}
-          <AccountsMenu accounts={accounts} active={pathname.startsWith("/accounts")} />
+          <AccountsMenu
+            accounts={accounts}
+            active={pathname.startsWith("/accounts")}
+            budgetCurrency={budgetCurrency}
+          />
         </nav>
 
         <div className="ml-auto flex items-center gap-2">

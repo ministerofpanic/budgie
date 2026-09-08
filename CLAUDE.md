@@ -64,7 +64,13 @@ Internal packages are consumed as TypeScript source (no build step), so
   ID, so `PASSKEY_RP_ID` is `localhost` in dev and `budgie.mikeholloway.co.uk`
   in production. Passkeys registered on a `*.netlify.app` preview will not work
   on the real domain, and vice versa.
-- **Single currency per budget**, GBP default. No multi-currency.
+- **One home currency per budget**, GBP default, used for categories, Ready
+  to Assign, and reporting. Individual **accounts** may hold a different
+  currency - the budget engine only ever sees home-currency amounts
+  (conversion happens at the DAL boundary, in `loadBudgetInput`); the
+  register and account balances always show native currency. Exchange
+  rates are fetched from Frankfurter.app (free, keyless) and stored per
+  transaction, always user-editable.
 - **Shared budgets** via `budget_member` with owner / editor / viewer roles.
   Every query is scoped by membership in the data-access layer, never in page
   code.

@@ -4,7 +4,11 @@ import { useCallback, useId, useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 
 import type { TransactionRow } from "@/lib/dal/transactions";
-import { createTransactionAction, updateTransactionAction } from "@/lib/actions/budget-actions";
+import {
+  createTransactionAction,
+  fetchExchangeRateAction,
+  updateTransactionAction,
+} from "@/lib/actions/budget-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +36,7 @@ const errorMessage = {
   "splits-dont-match-total": "Splits must add up to the total.",
   "category-required": "Choose a category, or split across several.",
   "reconciled-locked": "This transaction is reconciled and locked - it can't be edited.",
+  "invalid-exchange-rate": "Enter a valid exchange rate.",
 } as const;
 
 const CategorySelect = ({
@@ -99,16 +104,21 @@ const SplitRowFields = ({
 
 const TransactionForm = ({
   accountId,
+  accountCurrency,
+  budgetCurrency,
   categoryOptions,
   existing,
   onDone,
 }: {
   readonly accountId: string;
+  readonly accountCurrency: string;
+  readonly budgetCurrency: string;
   readonly categoryOptions: readonly CategoryOption[];
   readonly existing?: TransactionRow | undefined;
   readonly onDone?: (() => void) | undefined;
 }) => {
   const formId = useId();
+  const isForeign = accountCurrency !== budgetCurrency;
   const [date, setDate] = useState(existing?.date ?? todayIso());
   const [payeeName, setPayeeName] = useState(existing?.payeeName ?? "");
   const [memo, setMemo] = useState(existing?.memo ?? "");
@@ -119,6 +129,8 @@ const TransactionForm = ({
   const [inflow, setInflow] = useState(
     existing && existing.amountPence > 0 ? (existing.amountPence / 100).toFixed(2) : "",
   );
+  const [exchangeRate, setExchangeRate] = useState(existing?.exchangeRate ?? "");
+  const [rateFetchPending, startRateFetch] = useTransition();
   const [split, setSplit] = useState((existing?.splits.length ?? 0) > 0);
   const [categoryId, setCategoryId] = useState(
     existing?.categoryId ?? categoryOptions[0]?.id ?? "",
@@ -162,6 +174,20 @@ const TransactionForm = ({
     setInflow(event.target.value);
     if (event.target.value) setOutflow("");
   }, []);
+  const handleExchangeRateChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => setExchangeRate(event.target.value),
+    [],
+  );
+  // Pre-fills the converted rate from a free FX lookup once an amount is
+  // entered on a foreign-currency account - never overwrites a rate the
+  // user has already typed, since a bank's booked rate can differ.
+  const fetchRate = useCallback(() => {
+    if (!isForeign || exchangeRate.trim()) return;
+    startRateFetch(async () => {
+      const result = await fetchExchangeRateAction(accountCurrency, budgetCurrency, date);
+      if (result.ok) setExchangeRate(String(result.value));
+    });
+  }, [isForeign, exchangeRate, accountCurrency, budgetCurrency, date]);
 
   const addSplitRow = useCallback(() => {
     setSplits((rows) => [
@@ -200,6 +226,7 @@ const TransactionForm = ({
         cleared,
         outflowInput: outflow || undefined,
         inflowInput: inflow || undefined,
+        exchangeRateInput: isForeign ? exchangeRate || undefined : undefined,
         categoryId: split ? undefined : categoryId || undefined,
         splits: split
           ? splits.map(({ categoryId: c, amountInput }) => ({ categoryId: c, amountInput }))
@@ -233,6 +260,8 @@ const TransactionForm = ({
       memo,
       cleared,
       outflow,
+      isForeign,
+      exchangeRate,
       inflow,
       split,
       categoryId,
@@ -257,14 +286,41 @@ const TransactionForm = ({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
-          <Label htmlFor="outflow">Outflow</Label>
-          <Input id="outflow" inputMode="decimal" value={outflow} onChange={handleOutflowChange} />
+          <Label htmlFor="outflow">Outflow ({accountCurrency})</Label>
+          <Input
+            id="outflow"
+            inputMode="decimal"
+            value={outflow}
+            onChange={handleOutflowChange}
+            onBlur={fetchRate}
+          />
         </div>
         <div className="flex flex-col gap-1">
-          <Label htmlFor="inflow">Inflow</Label>
-          <Input id="inflow" inputMode="decimal" value={inflow} onChange={handleInflowChange} />
+          <Label htmlFor="inflow">Inflow ({accountCurrency})</Label>
+          <Input
+            id="inflow"
+            inputMode="decimal"
+            value={inflow}
+            onChange={handleInflowChange}
+            onBlur={fetchRate}
+          />
         </div>
       </div>
+
+      {isForeign ? (
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="exchange-rate">
+            Exchange rate ({accountCurrency} to {budgetCurrency})
+          </Label>
+          <Input
+            id="exchange-rate"
+            inputMode="decimal"
+            value={exchangeRate}
+            onChange={handleExchangeRateChange}
+            placeholder={rateFetchPending ? "Fetching…" : undefined}
+          />
+        </div>
+      ) : null}
 
       <label className="text-muted-foreground flex items-center gap-2 text-sm">
         <input type="checkbox" checked={split} onChange={handleSplitToggle} />

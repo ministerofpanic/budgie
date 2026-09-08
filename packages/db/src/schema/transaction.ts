@@ -8,6 +8,7 @@ import {
   boolean,
   uniqueIndex,
   index,
+  numeric,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { budget } from "./budget.ts";
@@ -32,6 +33,12 @@ export const transaction = pgTable(
     // Null when the transaction is split across categories - see transaction_split.
     categoryId: uuid("category_id").references(() => category.id, { onDelete: "set null" }),
     amountPence: integer("amount_pence").notNull(),
+    // Rate from the account's currency to the budget's home currency, at
+    // the time of the transaction. Null when they match (the common case)
+    // - the engine and reports then use amountPence directly. Never
+    // recomputed after the fact, so historical activity stays stable even
+    // if today's spot rate moves.
+    exchangeRate: numeric("exchange_rate", { precision: 18, scale: 8 }),
     memo: text("memo"),
     cleared: boolean("cleared").notNull().default(false),
     reconciled: boolean("reconciled").notNull().default(false),

@@ -163,9 +163,23 @@ export const getRequisition = async (
 export type BankTransaction = {
   readonly date: string;
   readonly amountPence: Pence;
+  readonly currency: string | null;
   readonly payeeName: string | null;
   readonly memo: string | null;
   readonly externalId: string;
+};
+
+export type AccountDetails = { readonly currency: string | null };
+
+export const getAccountDetails = async (
+  token: AccessToken,
+  gocardlessAccountId: string,
+): Promise<Result<AccountDetails, GoCardlessError>> => {
+  const result = await authedRequest<{
+    readonly account: { readonly currency?: string };
+  }>(token, `/accounts/${gocardlessAccountId}/details/`);
+  if (!result.ok) return result;
+  return ok({ currency: result.value.body.account.currency ?? null });
 };
 
 export type RateLimit = {
@@ -188,7 +202,7 @@ type RawTransaction = {
   readonly internalTransactionId?: string;
   readonly bookingDate?: string;
   readonly valueDate?: string;
-  readonly transactionAmount: { readonly amount: string };
+  readonly transactionAmount: { readonly amount: string; readonly currency?: string };
   readonly creditorName?: string;
   readonly debtorName?: string;
   readonly remittanceInformationUnstructured?: string;
@@ -223,6 +237,7 @@ export const getAccountTransactions = async (
     return {
       date: raw.bookingDate ?? raw.valueDate ?? "",
       amountPence: parseAmountPence(raw.transactionAmount.amount),
+      currency: raw.transactionAmount.currency ?? null,
       payeeName,
       memo,
       externalId: raw.transactionId ?? raw.internalTransactionId ?? "",

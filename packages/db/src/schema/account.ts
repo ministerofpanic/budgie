@@ -15,6 +15,7 @@ export const account = pgTable("account", {
     .notNull()
     .references(() => budget.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
+  currency: text("currency").notNull().default("GBP"),
   type: accountType("type").notNull(),
   onBudget: boolean("on_budget").notNull().default(true),
   closed: boolean("closed").notNull().default(false),

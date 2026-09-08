@@ -27,6 +27,7 @@ export type TransactionRow = {
   readonly categoryName: string | null;
   readonly memo: string | null;
   readonly amountPence: number;
+  readonly exchangeRate: string | null;
   readonly cleared: boolean;
   readonly reconciled: boolean;
   readonly runningBalance: number;
@@ -164,6 +165,7 @@ export const listForAccount = async (
       : null,
     memo: transaction.memo,
     amountPence: transaction.amountPence,
+    exchangeRate: transaction.exchangeRate,
     cleared: transaction.cleared,
     reconciled: transaction.reconciled,
     runningBalance: transaction.runningBalancePence,
@@ -185,6 +187,10 @@ export const transactionInputSchema = z.object({
   inflowInput: z.string().optional(),
   categoryId: z.uuid().optional(),
   splits: z.array(splitInputSchema).optional(),
+  /** Rate from the account's currency to the budget's home currency, when
+   * they differ - pre-filled by the client from `getExchangeRate`, always
+   * editable. Ignored (stored as null) when the account isn't foreign. */
+  exchangeRateInput: z.string().optional(),
 });
 
 export type TransactionInput = z.infer<typeof transactionInputSchema>;
@@ -194,7 +200,23 @@ export type TransactionInputError =
   | { readonly kind: "amount-required" }
   | { readonly kind: "splits-dont-match-total" }
   | { readonly kind: "category-required" }
-  | { readonly kind: "reconciled-locked" };
+  | { readonly kind: "reconciled-locked" }
+  | { readonly kind: "invalid-exchange-rate" };
+
+/** Null when the account's currency matches the budget's - the common case,
+ * where amountPence needs no conversion for the budget engine or reports. */
+const resolveExchangeRate = (
+  accountCurrency: string,
+  budgetCurrency: string,
+  exchangeRateInput: string | undefined,
+): Result<number | null, TransactionInputError> => {
+  if (accountCurrency === budgetCurrency) return ok(null);
+  const rate = Number(exchangeRateInput);
+  if (!exchangeRateInput || !Number.isFinite(rate) || rate <= 0) {
+    return err({ kind: "invalid-exchange-rate" });
+  }
+  return ok(rate);
+};
 
 const resolveAmount = (
   input: Pick<TransactionInput, "outflowInput" | "inflowInput">,
@@ -231,13 +253,20 @@ const resolveSplits = (
 export const createTransaction = async (
   raw: unknown,
 ): Promise<Result<{ readonly id: string }, TransactionInputError>> => {
-  const { budgetId } = await requireBudget("editor");
+  const { budgetId, currency: budgetCurrency } = await requireBudget("editor");
   const input = transactionInputSchema.parse(raw);
   const account = await getAccount(input.accountId);
   if (!account) throw new Error(`No account ${input.accountId} in this budget`);
 
   const amount = resolveAmount(input);
   if (!amount.ok) return amount;
+
+  const exchangeRate = resolveExchangeRate(
+    account.currency,
+    budgetCurrency,
+    input.exchangeRateInput,
+  );
+  if (!exchangeRate.ok) return exchangeRate;
 
   const splits =
     input.splits && input.splits.length > 0 ? resolveSplits(input.splits, amount.value) : undefined;
@@ -255,6 +284,7 @@ export const createTransaction = async (
       payeeId,
       categoryId: splits ? undefined : input.categoryId,
       amountPence: amount.value,
+      exchangeRate: exchangeRate.value === null ? null : String(exchangeRate.value),
       memo: input.memo,
       cleared: input.cleared,
     })
@@ -281,7 +311,7 @@ export const updateTransaction = async (
   rawId: string,
   raw: unknown,
 ): Promise<Result<{ readonly id: string }, TransactionInputError>> => {
-  const { budgetId } = await requireBudget("editor");
+  const { budgetId, currency: budgetCurrency } = await requireBudget("editor");
   const id = z.uuid().parse(rawId);
   const existing = await db.query.transaction.findFirst({
     where: and(eq(schema.transaction.id, id), eq(schema.transaction.budgetId, budgetId)),
@@ -295,6 +325,13 @@ export const updateTransaction = async (
 
   const amount = resolveAmount(input);
   if (!amount.ok) return amount;
+
+  const exchangeRate = resolveExchangeRate(
+    account.currency,
+    budgetCurrency,
+    input.exchangeRateInput,
+  );
+  if (!exchangeRate.ok) return exchangeRate;
 
   const splits =
     input.splits && input.splits.length > 0 ? resolveSplits(input.splits, amount.value) : undefined;
@@ -311,6 +348,7 @@ export const updateTransaction = async (
       payeeId,
       categoryId: splits ? null : (input.categoryId ?? null),
       amountPence: amount.value,
+      exchangeRate: exchangeRate.value === null ? null : String(exchangeRate.value),
       memo: input.memo,
       cleared: input.cleared,
     })
