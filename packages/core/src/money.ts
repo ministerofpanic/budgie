@@ -71,6 +71,16 @@ export const parseAmount = (input: string): Result<Pence, MoneyError> => {
 
 export const toPounds = (value: Pence): number => value / 100;
 
+/** Plain "12.34" / "-5.00", no currency symbol - for CSV export, not
+ * display. Integer math throughout, no float division, unlike `toPounds`. */
+export const toDecimalString = (value: Pence): string => {
+  const sign = value < 0 ? "-" : "";
+  const magnitude = Math.abs(value);
+  const whole = Math.trunc(magnitude / 100);
+  const minor = magnitude % 100;
+  return `${sign}${String(whole)}.${String(minor).padStart(2, "0")}`;
+};
+
 const formatterCache = new Map<string, Intl.NumberFormat>();
 
 const formatterFor = (currency: string, locale: string): Intl.NumberFormat => {

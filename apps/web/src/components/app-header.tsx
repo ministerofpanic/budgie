@@ -6,6 +6,7 @@ import { useCallback, useState, useTransition } from "react";
 import {
   Bird,
   ChevronDown,
+  Download,
   KeyRound,
   Landmark,
   LayoutGrid,
@@ -103,6 +104,12 @@ const AccountsMenu = ({
           <DropdownMenuItem onClick={openNewAccount}>
             <Plus className="size-4" />
             New account
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <a href="/api/export" download>
+              <Download className="size-4" />
+              Export CSV
+            </a>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

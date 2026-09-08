@@ -10,6 +10,7 @@ import {
   pence,
   subtract,
   sum,
+  toDecimalString,
   toPounds,
   unsafePence,
 } from "../src/money";
@@ -155,5 +156,28 @@ describe("allocate", () => {
         expect(shares).toHaveLength(weights.length);
       }
     }
+  });
+});
+
+describe("toDecimalString", () => {
+  it("formats whole pounds", () => {
+    expect(toDecimalString(unsafePence(1200))).toBe("12.00");
+  });
+
+  it("formats pence under a pound", () => {
+    expect(toDecimalString(unsafePence(5))).toBe("0.05");
+  });
+
+  it("formats a negative amount", () => {
+    expect(toDecimalString(unsafePence(-2350))).toBe("-23.50");
+  });
+
+  it("formats zero", () => {
+    expect(toDecimalString(ZERO)).toBe("0.00");
+  });
+
+  it("stays exact for a value that float division would corrupt", () => {
+    // 35_007 / 100 in plain float division is 350.06999999999996, not 350.07.
+    expect(toDecimalString(unsafePence(35_007))).toBe("350.07");
   });
 });

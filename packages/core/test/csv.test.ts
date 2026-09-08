@@ -3,6 +3,7 @@ import { unsafePence as p } from "../src/money";
 import {
   applyMapping,
   computeImportFingerprint,
+  formatCsvRow,
   parseCsv,
   parseDateWithFormat,
   sniffDateFormat,
@@ -186,5 +187,31 @@ describe("computeImportFingerprint", () => {
     expect(computeImportFingerprint("acc-1", "2026-08-16", p(-2350), "Supermarket")).not.toBe(base);
     expect(computeImportFingerprint("acc-1", "2026-08-15", p(-2351), "Supermarket")).not.toBe(base);
     expect(computeImportFingerprint("acc-1", "2026-08-15", p(-2350), "Cafe")).not.toBe(base);
+  });
+});
+
+describe("formatCsvRow", () => {
+  it("joins plain fields with commas", () => {
+    expect(formatCsvRow(["a", "b", "c"])).toBe("a,b,c");
+  });
+
+  it("quotes a field containing a comma", () => {
+    expect(formatCsvRow(["Groceries: Food, Drink", "12.34"])).toBe(
+      '"Groceries: Food, Drink",12.34',
+    );
+  });
+
+  it("quotes a field containing a quote, doubling it", () => {
+    expect(formatCsvRow(['She said "hi"'])).toBe('"She said ""hi"""');
+  });
+
+  it("quotes a field containing a newline", () => {
+    expect(formatCsvRow(["line one\nline two"])).toBe('"line one\nline two"');
+  });
+
+  it("round-trips through parseCsv", () => {
+    const original = ["Tesco, Express", 'a "quoted" word', "plain"];
+    const row = formatCsvRow(original);
+    expect(parseCsv(row, ",")).toEqual([original]);
   });
 });

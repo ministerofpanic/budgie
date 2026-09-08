@@ -241,3 +241,11 @@ export const computeImportFingerprint = (
   payeeName: string | null,
 ): string =>
   `${accountId}|${date}|${String(amountPence)}|${(payeeName ?? "").trim().toLowerCase()}`;
+
+/** Quotes a field for RFC 4180 output when it contains a comma, quote, or
+ * newline - the symmetric counterpart to `parseCsv`. */
+const escapeCsvField = (field: string): string =>
+  /[",\r\n]/.test(field) ? `"${field.replaceAll('"', '""')}"` : field;
+
+export const formatCsvRow = (fields: readonly string[]): string =>
+  fields.map(escapeCsvField).join(",");
