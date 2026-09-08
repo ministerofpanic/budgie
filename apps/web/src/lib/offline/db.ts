@@ -42,22 +42,33 @@ export type ConflictEntry = {
   readonly queuedAt: string;
 };
 
+/** Tiny per-budget bookkeeping - currently just the last-seen change
+ * signature, so `syncNow` can skip a full snapshot re-pull when nothing on
+ * the server has actually changed. */
+type SyncMeta = { readonly budgetId: string; readonly changeSignature: string };
+
 type OfflineDBSchema = DBSchema & {
   snapshot: { key: string; value: OfflineSnapshot };
   outbox: { key: string; value: OutboxOp; indexes: { budgetId: string } };
   conflicts: { key: string; value: ConflictEntry; indexes: { budgetId: string } };
+  meta: { key: string; value: SyncMeta };
 };
 
 let dbPromise: Promise<IDBPDatabase<OfflineDBSchema>> | null = null;
 
 export const getOfflineDb = (): Promise<IDBPDatabase<OfflineDBSchema>> => {
-  dbPromise ??= openDB<OfflineDBSchema>("budgie-offline", 1, {
-    upgrade(db) {
-      db.createObjectStore("snapshot");
-      const outbox = db.createObjectStore("outbox", { keyPath: "id" });
-      outbox.createIndex("budgetId", "budgetId");
-      const conflicts = db.createObjectStore("conflicts", { keyPath: "id" });
-      conflicts.createIndex("budgetId", "op.budgetId");
+  dbPromise ??= openDB<OfflineDBSchema>("budgie-offline", 2, {
+    upgrade(db, oldVersion) {
+      if (oldVersion < 1) {
+        db.createObjectStore("snapshot");
+        const outbox = db.createObjectStore("outbox", { keyPath: "id" });
+        outbox.createIndex("budgetId", "budgetId");
+        const conflicts = db.createObjectStore("conflicts", { keyPath: "id" });
+        conflicts.createIndex("budgetId", "op.budgetId");
+      }
+      if (oldVersion < 2) {
+        db.createObjectStore("meta", { keyPath: "budgetId" });
+      }
     },
   });
   return dbPromise;

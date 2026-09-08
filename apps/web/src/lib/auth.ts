@@ -79,6 +79,10 @@ export const auth = betterAuth({
           });
         }
       },
+      // Explicit rather than relying on Better Auth's default - anyone can
+      // trigger a send for any address with no CAPTCHA, so this caps both
+      // Resend-quota burn and harassment of a real inbox.
+      rateLimit: { window: 60, max: 3 },
     }),
     nextCookies(),
   ],

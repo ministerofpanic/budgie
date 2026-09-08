@@ -4,6 +4,7 @@ import {
   assignCategoryAction,
   createTransactionAction,
   deleteTransactionWithConflictCheckAction,
+  getOfflineChangeSignatureAction,
   getOfflineSnapshotAction,
   updateTransactionAction,
 } from "@/lib/actions/budget-actions";
@@ -177,6 +178,19 @@ export const syncNow = async (budgetId: string): Promise<void> => {
     if (ok) await removeFromOutbox(op.id);
   }
 
+  // A full snapshot pull is the expensive part (a whole-budget DB read plus
+  // rewriting the local copy) - this runs on every reconnect, foreground,
+  // and a 5-minute timer indefinitely, so skip it when nothing changed and
+  // this pass didn't itself just write anything. The signature check is two
+  // indexed max() scans, several orders of magnitude cheaper.
+  const db = await getOfflineDb();
+  const signature = await getOfflineChangeSignatureAction();
+  if (pending.length === 0) {
+    const meta = await db.get("meta", budgetId);
+    if (meta?.changeSignature === signature) return;
+  }
+
   const snapshot = await getOfflineSnapshotAction();
   await saveSnapshot(snapshot);
+  await db.put("meta", { budgetId, changeSignature: signature });
 };

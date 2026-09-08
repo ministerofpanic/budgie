@@ -1,22 +1,37 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
 import * as categories from "@/lib/dal/categories";
 import * as assignments from "@/lib/dal/assignments";
 import * as transactions from "@/lib/dal/transactions";
 import * as targets from "@/lib/dal/targets";
 import * as accounts from "@/lib/dal/accounts";
+import { requireBudget } from "@/lib/dal/budget";
 import type { Result } from "@budgie/core/result";
 import type { Pence } from "@budgie/core/money";
 import { getExchangeRate, type ExchangeRateError } from "@budgie/core";
-import { getOfflineSnapshot } from "@/lib/dal/offline";
+import { getOfflineChangeSignature, getOfflineSnapshot } from "@/lib/dal/offline";
 
+const currencyCode = z.string().regex(/^[A-Z]{3}$/);
+
+/** Requires a session (any budget member, not just editors - this is a
+ * read-only lookup) so the app doesn't act as an unauthenticated, free
+ * proxy to Frankfurter for anyone who can reach this action's endpoint. */
 export const fetchExchangeRateAction = async (
   from: string,
   to: string,
   date: string,
-): Promise<Result<number, ExchangeRateError>> => getExchangeRate(from, to, date);
+): Promise<Result<number, ExchangeRateError>> => {
+  await requireBudget();
+  const parsedFrom = currencyCode.safeParse(from);
+  const parsedTo = currencyCode.safeParse(to);
+  if (!parsedFrom.success || !parsedTo.success) {
+    return { ok: false, error: { kind: "not-found", from, to, date } };
+  }
+  return getExchangeRate(parsedFrom.data, parsedTo.data, date);
+};
 
 export const createAccountAction = async (name: string, type: unknown, currency?: string) => {
   const account = await accounts.createAccount(name, type, currency);
@@ -145,3 +160,5 @@ export const deleteTransactionWithConflictCheckAction = async (
 };
 
 export const getOfflineSnapshotAction = async () => getOfflineSnapshot();
+
+export const getOfflineChangeSignatureAction = async () => getOfflineChangeSignature();

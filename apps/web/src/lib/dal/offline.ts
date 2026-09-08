@@ -1,7 +1,7 @@
 import "server-only";
 
 import { db, schema } from "@budgie/db";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 
 import { requireBudget } from "@/lib/dal/budget";
 import { listTargets } from "@/lib/dal/targets";
@@ -63,6 +63,30 @@ export type OfflineSnapshot = {
     readonly memo: string | null;
   }[];
   readonly payees: readonly { readonly id: string; readonly name: string }[];
+};
+
+/**
+ * A cheap "has anything changed" check - the offline client polls this on
+ * every reconnect/foreground/5-minute-timer instead of unconditionally
+ * re-pulling and re-persisting the whole budget snapshot each time. Two
+ * indexed `max(updated_at)` scans, not a full-table read.
+ */
+export const getOfflineChangeSignature = async (): Promise<string> => {
+  const { budgetId } = await requireBudget();
+
+  const [[txn], [assignment]] = await Promise.all([
+    db
+      .select({ maxUpdatedAt: sql<string | null>`max(${schema.transaction.updatedAt})` })
+      .from(schema.transaction)
+      .where(eq(schema.transaction.budgetId, budgetId)),
+    db
+      .select({ maxUpdatedAt: sql<string | null>`max(${schema.categoryMonth.updatedAt})` })
+      .from(schema.categoryMonth)
+      .innerJoin(schema.category, eq(schema.categoryMonth.categoryId, schema.category.id))
+      .where(eq(schema.category.budgetId, budgetId)),
+  ]);
+
+  return `${txn?.maxUpdatedAt ?? ""}|${assignment?.maxUpdatedAt ?? ""}`;
 };
 
 /**

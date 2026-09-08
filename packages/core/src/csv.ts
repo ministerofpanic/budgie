@@ -242,10 +242,19 @@ export const computeImportFingerprint = (
 ): string =>
   `${accountId}|${date}|${String(amountPence)}|${(payeeName ?? "").trim().toLowerCase()}`;
 
-/** Quotes a field for RFC 4180 output when it contains a comma, quote, or
- * newline - the symmetric counterpart to `parseCsv`. */
-const escapeCsvField = (field: string): string =>
-  /[",\r\n]/.test(field) ? `"${field.replaceAll('"', '""')}"` : field;
+/**
+ * Quotes a field for RFC 4180 output when it contains a comma, quote, or
+ * newline - the symmetric counterpart to `parseCsv`. Also neutralises CSV
+ * formula injection: a field starting with `=`, `+`, `-`, or `@` is treated
+ * as a live formula by Excel/Sheets when the file is opened, which is a
+ * real risk here since payee/memo text is attacker-shaped (a shared-budget
+ * editor, or an imported bank/CSV string) - prefixing a leading `'` forces
+ * it to render as plain text instead.
+ */
+const escapeCsvField = (field: string): string => {
+  const guarded = /^[=+\-@]/.test(field) ? `'${field}` : field;
+  return /[",\r\n]/.test(guarded) ? `"${guarded.replaceAll('"', '""')}"` : guarded;
+};
 
 export const formatCsvRow = (fields: readonly string[]): string =>
   fields.map(escapeCsvField).join(",");

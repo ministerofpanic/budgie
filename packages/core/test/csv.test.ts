@@ -214,4 +214,18 @@ describe("formatCsvRow", () => {
     const row = formatCsvRow(original);
     expect(parseCsv(row, ",")).toEqual([original]);
   });
+
+  it("guards a field starting with = so it can't run as a formula in Excel/Sheets", () => {
+    expect(formatCsvRow(['=HYPERLINK("http://evil","click")'])).toBe(
+      '"\'=HYPERLINK(""http://evil"",""click"")"',
+    );
+  });
+
+  it("guards fields starting with +, -, or @ the same way", () => {
+    expect(formatCsvRow(["+1234", "-1234", "@SUM(A1)"])).toBe("'+1234,'-1234,'@SUM(A1)");
+  });
+
+  it("does not guard a field that merely contains = elsewhere", () => {
+    expect(formatCsvRow(["Rent = 900"])).toBe("Rent = 900");
+  });
 });

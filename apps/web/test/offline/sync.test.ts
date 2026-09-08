@@ -7,6 +7,7 @@ const actions = vi.hoisted(() => ({
   deleteTransactionWithConflictCheckAction: vi.fn(),
   assignCategoryAction: vi.fn(),
   getOfflineSnapshotAction: vi.fn(),
+  getOfflineChangeSignatureAction: vi.fn(),
 }));
 vi.mock("@/lib/actions/budget-actions", () => actions);
 
@@ -29,11 +30,13 @@ const emptySnapshot = {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  actions.getOfflineChangeSignatureAction.mockResolvedValue("sig-1");
   Object.defineProperty(globalThis.navigator, "onLine", { value: true, configurable: true });
   const db = await getOfflineDb();
   await db.clear("snapshot");
   await db.clear("outbox");
   await db.clear("conflicts");
+  await db.clear("meta");
 });
 
 describe("syncNow", () => {
@@ -98,5 +101,28 @@ describe("syncNow", () => {
     const conflicts = await listConflicts("budget-1");
     expect(conflicts).toHaveLength(1);
     expect(conflicts[0]?.reason).toBe("conflict");
+  });
+
+  it("skips the full snapshot pull when the outbox is empty and nothing changed server-side", async () => {
+    actions.getOfflineChangeSignatureAction.mockResolvedValue("sig-1");
+    const db = await getOfflineDb();
+    await db.put("meta", { budgetId: "budget-1", changeSignature: "sig-1" });
+
+    await syncNow("budget-1");
+
+    expect(actions.getOfflineSnapshotAction).not.toHaveBeenCalled();
+  });
+
+  it("pulls a fresh snapshot when the change signature differs, even with an empty outbox", async () => {
+    actions.getOfflineSnapshotAction.mockResolvedValue(emptySnapshot);
+    actions.getOfflineChangeSignatureAction.mockResolvedValue("sig-2");
+    const db = await getOfflineDb();
+    await db.put("meta", { budgetId: "budget-1", changeSignature: "sig-1" });
+
+    await syncNow("budget-1");
+
+    expect(actions.getOfflineSnapshotAction).toHaveBeenCalledTimes(1);
+    const meta = await db.get("meta", "budget-1");
+    expect(meta?.changeSignature).toBe("sig-2");
   });
 });
