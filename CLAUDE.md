@@ -74,6 +74,23 @@ Internal packages are consumed as TypeScript source (no build step), so
 - **Shared budgets** via `budget_member` with owner / editor / viewer roles.
   Every query is scoped by membership in the data-access layer, never in page
   code.
+- **PWA with offline browsing**, scoped to the budget grid and account
+  register. `apps/web/src/app/sw.ts` (Serwist) caches the app shell;
+  `apps/web/src/lib/offline/` mirrors the whole budget into IndexedDB
+  (`idb`) whenever online and swaps in a client-rendered offline view
+  (`components/offline/`, driven by `OfflineGate` in the app layout) when
+  the browser goes offline, using the same `@budgie/budget` engine
+  functions the server uses. Offline edits queue in an outbox and replay
+  on reconnect via the existing Server Actions; `updateTransaction`,
+  `deleteTransactionWithConflictCheck`, and `setAssigned` carry an
+  optional `expectedUpdatedAt` optimistic-concurrency guard for this path
+  (a normal online single-device save omits it and is unaffected). A
+  conflicted replay surfaces in a "Resolve conflicts" banner rather than
+  silently overwriting someone else's edit. Reports, Scheduled, Sharing,
+  CSV import, and bank linking are deliberately online-only for now.
+  Production builds run webpack (`next build --webpack`), since Serwist's
+  webpack plugin doesn't yet support Turbopack; dev still uses Turbopack
+  (`disable` is set accordingly in `next.config.ts`).
 
 ## Environment
 

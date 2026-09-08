@@ -10,6 +10,7 @@ import * as accounts from "@/lib/dal/accounts";
 import type { Result } from "@budgie/core/result";
 import type { Pence } from "@budgie/core/money";
 import { getExchangeRate, type ExchangeRateError } from "@budgie/core";
+import { getOfflineSnapshot } from "@/lib/dal/offline";
 
 export const fetchExchangeRateAction = async (
   from: string,
@@ -43,8 +44,9 @@ export const assignCategoryAction = async (
   categoryId: string,
   month: string,
   amountInput: string,
+  expectedUpdatedAt?: string,
 ): Promise<Result<Pence, assignments.AssignError>> => {
-  const result = await assignments.setAssigned(categoryId, month, amountInput);
+  const result = await assignments.setAssigned(categoryId, month, amountInput, expectedUpdatedAt);
   if (result.ok) revalidatePath("/budget");
   return result;
 };
@@ -125,3 +127,21 @@ export const deleteTransactionsAction = async (ids: readonly string[]) => {
   revalidatePath("/budget");
   revalidatePath("/accounts/[id]", "page");
 };
+
+/** Used by the offline sync queue - single-row delete with the same
+ * optimistic-concurrency guard `updateTransactionAction` gets via
+ * `expectedUpdatedAt`. The bulk `deleteTransactionsAction` above is
+ * unchanged and still backs the online multi-select UI. */
+export const deleteTransactionWithConflictCheckAction = async (
+  id: string,
+  expectedUpdatedAt: string,
+) => {
+  const result = await transactions.deleteTransactionWithConflictCheck(id, expectedUpdatedAt);
+  if (result.ok) {
+    revalidatePath("/budget");
+    revalidatePath("/accounts/[id]", "page");
+  }
+  return result;
+};
+
+export const getOfflineSnapshotAction = async () => getOfflineSnapshot();

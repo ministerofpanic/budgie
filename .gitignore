@@ -12,3 +12,5 @@ coverage
 test-results
 playwright-report
 blob-report
+apps/web/public/sw.js*
+apps/web/public/swe-worker-*.js*

@@ -43,6 +43,25 @@
       "rules": {
         "react-perf/jsx-no-new-object-as-prop": "off"
       }
+    },
+    {
+      "files": ["apps/web/src/app/sw.ts"],
+      "rules": {
+        "typescript/consistent-type-definitions": "off",
+        "no-underscore-dangle": "off"
+      }
+    },
+    {
+      "files": ["apps/web/src/lib/offline/sync.ts"],
+      "rules": {
+        "no-await-in-loop": "off"
+      }
+    },
+    {
+      "files": ["apps/web/src/components/offline/offline-gate.tsx"],
+      "rules": {
+        "react/set-state-in-effect": "off"
+      }
     }
   ]
 }

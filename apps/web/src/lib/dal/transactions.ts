@@ -191,6 +191,12 @@ export const transactionInputSchema = z.object({
    * they differ - pre-filled by the client from `getExchangeRate`, always
    * editable. Ignored (stored as null) when the account isn't foreign. */
   exchangeRateInput: z.string().optional(),
+  /** Optimistic-concurrency guard: the `updatedAt` the caller last saw for
+   * this row. Only checked when present - the offline sync queue always
+   * supplies it (a stale edit made while offline must not silently
+   * overwrite a newer server edit); a normal online single-device save
+   * omits it and behaves as it always has. */
+  expectedUpdatedAt: z.string().optional(),
 });
 
 export type TransactionInput = z.infer<typeof transactionInputSchema>;
@@ -201,7 +207,8 @@ export type TransactionInputError =
   | { readonly kind: "splits-dont-match-total" }
   | { readonly kind: "category-required" }
   | { readonly kind: "reconciled-locked" }
-  | { readonly kind: "invalid-exchange-rate" };
+  | { readonly kind: "invalid-exchange-rate" }
+  | { readonly kind: "conflict" };
 
 /** Null when the account's currency matches the budget's - the common case,
  * where amountPence needs no conversion for the budget engine or reports. */
@@ -320,6 +327,10 @@ export const updateTransaction = async (
   if (existing.reconciled) return err({ kind: "reconciled-locked" });
 
   const input = transactionInputSchema.parse(raw);
+  if (input.expectedUpdatedAt && existing.updatedAt.toISOString() !== input.expectedUpdatedAt) {
+    return err({ kind: "conflict" });
+  }
+
   const account = await getAccount(input.accountId);
   if (!account) throw new Error(`No account ${input.accountId} in this budget`);
 
@@ -340,7 +351,14 @@ export const updateTransaction = async (
 
   const payeeId = input.payeeName ? await findOrCreatePayee(budgetId, input.payeeName) : undefined;
 
-  await db
+  // The WHERE clause re-checks updatedAt (not just the earlier read) to close
+  // the race between reading `existing` and writing - a concurrent write
+  // landing in between is still caught.
+  const updateWhere = input.expectedUpdatedAt
+    ? and(eq(schema.transaction.id, id), eq(schema.transaction.updatedAt, existing.updatedAt))
+    : eq(schema.transaction.id, id);
+
+  const updated = await db
     .update(schema.transaction)
     .set({
       accountId: input.accountId,
@@ -352,7 +370,10 @@ export const updateTransaction = async (
       memo: input.memo,
       cleared: input.cleared,
     })
-    .where(eq(schema.transaction.id, id));
+    .where(updateWhere)
+    .returning({ id: schema.transaction.id });
+
+  if (input.expectedUpdatedAt && updated.length === 0) return err({ kind: "conflict" });
 
   await db.delete(schema.transactionSplit).where(eq(schema.transactionSplit.transactionId, id));
   if (splits) {
@@ -417,4 +438,34 @@ export const deleteTransactions = async (rawIds: readonly string[]): Promise<voi
     );
 
   await Promise.all(affectedAccountIds.map((accountId) => recalculateRunningBalances(accountId)));
+};
+
+/**
+ * Single-row delete with the same optimistic-concurrency guard as
+ * `updateTransaction` - used by the offline sync queue, which always knows
+ * the `updatedAt` it last saw. The bulk `deleteTransactions` above is
+ * unchanged and still used by the online multi-select UI.
+ */
+export const deleteTransactionWithConflictCheck = async (
+  rawId: string,
+  expectedUpdatedAt: string,
+): Promise<Result<{ readonly id: string }, TransactionInputError>> => {
+  const { budgetId } = await requireBudget("editor");
+  const id = z.uuid().parse(rawId);
+
+  const existing = await db.query.transaction.findFirst({
+    where: and(eq(schema.transaction.id, id), eq(schema.transaction.budgetId, budgetId)),
+  });
+  if (!existing) throw new Error(`No transaction ${id} in this budget`);
+  if (existing.reconciled) return err({ kind: "reconciled-locked" });
+  if (existing.updatedAt.toISOString() !== expectedUpdatedAt) return err({ kind: "conflict" });
+
+  const deleted = await db
+    .delete(schema.transaction)
+    .where(and(eq(schema.transaction.id, id), eq(schema.transaction.updatedAt, existing.updatedAt)))
+    .returning({ id: schema.transaction.id });
+  if (deleted.length === 0) return err({ kind: "conflict" });
+
+  await recalculateRunningBalances(existing.accountId);
+  return ok({ id });
 };

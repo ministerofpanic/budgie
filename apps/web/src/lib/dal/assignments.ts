@@ -13,7 +13,8 @@ const monthSchema = z.string().regex(/^\d{4}-\d{2}$/, "Not a valid month");
 export type AssignError =
   | MoneyError
   | { readonly kind: "category-not-found" }
-  | { readonly kind: "negative-not-allowed" };
+  | { readonly kind: "negative-not-allowed" }
+  | { readonly kind: "conflict" };
 
 /**
  * Sets the assigned amount for a category in a month (an upsert - there's at
@@ -28,10 +29,23 @@ export type AssignError =
  * cancels a raw negative assignment against itself if one is ever stored -
  * matches real YNAB, which never lets "Assigned" itself go below zero.
  */
+/**
+ * `expectedUpdatedAt` is the offline sync queue's optimistic-concurrency
+ * guard: the `updatedAt` it last saw for this category/month, if any. When
+ * supplied and a row already exists with a different `updatedAt`, someone
+ * else changed the assignment first and this returns a conflict instead of
+ * overwriting it. When no row exists yet, there's nothing to conflict with
+ * - a first assignment always proceeds. (Unlike the transaction guards,
+ * this checks-then-writes rather than using a single CAS statement, since
+ * `onConflictDoUpdate` can't carry an extra WHERE - a narrower race window
+ * than the transaction path, acceptable given assignments collide far less
+ * often than transaction edits.)
+ */
 export const setAssigned = async (
   rawCategoryId: string,
   rawMonth: string,
   amountInput: string,
+  expectedUpdatedAt?: string,
 ): Promise<Result<Pence, AssignError>> => {
   const { budgetId } = await requireBudget("editor");
   const categoryId = z.uuid().parse(rawCategoryId);
@@ -46,9 +60,22 @@ export const setAssigned = async (
   });
   if (!category) return err({ kind: "category-not-found" });
 
+  const monthDate = `${month}-01`;
+  if (expectedUpdatedAt) {
+    const existing = await db.query.categoryMonth.findFirst({
+      where: and(
+        eq(schema.categoryMonth.categoryId, categoryId),
+        eq(schema.categoryMonth.month, monthDate),
+      ),
+    });
+    if (existing && existing.updatedAt.toISOString() !== expectedUpdatedAt) {
+      return err({ kind: "conflict" });
+    }
+  }
+
   await db
     .insert(schema.categoryMonth)
-    .values({ categoryId, month: `${month}-01`, assignedPence: parsedAmount.value })
+    .values({ categoryId, month: monthDate, assignedPence: parsedAmount.value })
     .onConflictDoUpdate({
       target: [schema.categoryMonth.categoryId, schema.categoryMonth.month],
       set: { assignedPence: parsedAmount.value },
