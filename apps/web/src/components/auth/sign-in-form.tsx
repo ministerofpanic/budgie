@@ -59,12 +59,12 @@ const SignInForm = () => {
     setEmail(event.target.value);
   }, []);
 
-  const retry = useCallback(() => {
+  const signInWithPasskey = useCallback(() => {
     setError(null);
     setPending(true);
-    // The failed conditional request has already resolved by the time this
-    // button is visible, but cancel defensively in case the browser still
-    // considers it outstanding - see the effect cleanup above for why.
+    // Cancel defensively in case the browser still considers the
+    // conditional (autofill) request outstanding - see the effect cleanup
+    // above for why.
     WebAuthnAbortService.cancelCeremony();
 
     void (async () => {
@@ -113,14 +113,16 @@ const SignInForm = () => {
           onChange={handleEmailChange}
         />
       </div>
-      {error ? (
-        <div className="flex flex-col gap-2">
-          <p className="text-destructive text-sm">{error}</p>
-          <Button type="button" variant="outline" loading={pending} onClick={retry}>
-            Try again
-          </Button>
-        </div>
-      ) : null}
+      {error ? <p className="text-destructive text-sm">{error}</p> : null}
+      {/* Always visible, not conditional on the autofill attempt having
+          failed/errored first - conditional (autofill) UI can fail silently
+          (near-instantly, no error surfaced - see the effect above) when a
+          browser doesn't support or allow it, e.g. Brave with Shields
+          enabled. Without this, that leaves no way to trigger the full
+          passkey picker at all. */}
+      <Button type="button" loading={pending} onClick={signInWithPasskey}>
+        Sign in with a passkey
+      </Button>
       <Button
         type="button"
         variant="outline"
