@@ -28,8 +28,7 @@ export type AssignError =
  * built for spending activity outrunning what's available, and wrongly
  * cancels a raw negative assignment against itself if one is ever stored -
  * matches real YNAB, which never lets "Assigned" itself go below zero.
- */
-/**
+ *
  * `expectedUpdatedAt` is the offline sync queue's optimistic-concurrency
  * guard: the `updatedAt` it last saw for this category/month, if any. When
  * supplied and a row already exists with a different `updatedAt`, someone

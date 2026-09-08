@@ -18,18 +18,18 @@ import { requireBudget } from "@/lib/dal/budget";
 import { listCategoryGroups } from "@/lib/dal/categories";
 import { loadBudgetInput } from "@/lib/dal/budget-month";
 
-/**
- * One ledger line per transaction, or per split for a split transaction -
- * the same decomposition `budget-month.ts` uses for the engine, so a report
- * total can never drift from what the budget grid and register show for the
- * same transactions.
- */
 // Reports read home-currency amounts throughout, same conversion boundary
 // as loadBudgetInput - a foreign account's spending is reported at the
 // rate captured on the transaction, not re-priced at today's spot rate.
 const toHomePence = (amountPence: number, exchangeRate: string | null): Pence =>
   unsafePence(exchangeRate === null ? amountPence : Math.round(amountPence * Number(exchangeRate)));
 
+/**
+ * One ledger line per transaction, or per split for a split transaction -
+ * the same decomposition `budget-month.ts` uses for the engine, so a report
+ * total can never drift from what the budget grid and register show for the
+ * same transactions.
+ */
 const loadLedgerLines = async (budgetId: string): Promise<readonly LedgerLine[]> => {
   const transactions = await db.query.transaction.findMany({
     where: eq(schema.transaction.budgetId, budgetId),

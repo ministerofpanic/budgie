@@ -62,9 +62,7 @@ const SignInForm = () => {
   const signInWithPasskey = useCallback(() => {
     setError(null);
     setPending(true);
-    // Cancel defensively in case the browser still considers the
-    // conditional (autofill) request outstanding - see the effect cleanup
-    // above for why.
+    // Defensive: browser may still think the autofill request is outstanding (see cleanup above).
     WebAuthnAbortService.cancelCeremony();
 
     void (async () => {

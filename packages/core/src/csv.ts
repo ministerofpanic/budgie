@@ -12,8 +12,7 @@ export type Delimiter = "," | ";" | "\t" | "|";
 
 const delimiters: readonly Delimiter[] = [",", ";", "\t", "|"];
 
-/** Picks whichever candidate delimiter splits the sample into the most
- * columns, consistently, across its first few lines. */
+/** Prefers a delimiter that splits every sampled line into the same column count. */
 export const sniffDelimiter = (sample: string): Delimiter => {
   const lines = sample
     .split(/\r\n|\n/)
@@ -203,8 +202,6 @@ const resolveAmount = (
   return parseAmount(inflowRaw ?? "");
 };
 
-/** Maps one parsed CSV row to a transaction, per the column mapping and the
- * account's sniffed (or user-confirmed) date format. */
 export const applyMapping = (
   row: readonly string[],
   mapping: ColumnMapping,

@@ -44,9 +44,9 @@ const defaultBudgetId = (userId: string): string => {
 
 /**
  * Every signed-in user gets exactly one budget of their own, created lazily
- * on first use so sign-up doesn't need a separate onboarding step. Sharing
- * (phase 08) adds further budgets via membership on top of this - a user's
- * own budget is never replaced by joining someone else's.
+ * on first use so sign-up doesn't need a separate onboarding step. Membership
+ * in a shared budget adds further budgets on top of this - a user's own
+ * budget is never replaced by joining someone else's.
  */
 const createDefaultBudget = async (userId: string, userName: string) => {
   const budgetId = defaultBudgetId(userId);

@@ -11,12 +11,9 @@ import { ConflictsBanner } from "@/components/offline/conflicts-banner";
 
 const SYNC_INTERVAL_MS = 5 * 60 * 1000;
 
-/** Wraps every authenticated page. Mirrors the current budget into
- * IndexedDB whenever online (on mount, on reconnect, on foreground, and on
- * a background interval as a safety net), and swaps in a client-rendered
- * offline view for the budget grid and account register when the browser
- * goes offline - everything else keeps rendering the normal server-fetched
- * `children` unchanged. */
+/** Mirrors the budget into IndexedDB while online and swaps in an offline
+ * view for the budget grid and register when the browser goes offline;
+ * other children render normally. */
 const OfflineGate = ({
   budgetId,
   children,

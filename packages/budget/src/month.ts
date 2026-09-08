@@ -26,7 +26,7 @@ const fromIndex = (index: number): MonthKey => {
   return `${String(year)}-${String(monthNumber).padStart(2, "0")}`;
 };
 
-/** The month a transaction date falls in: "2026-08-15" -> "2026-08". */
+/** "2026-08-15" -> "2026-08". */
 export const monthOf = (isoDate: string): MonthKey => {
   const datePattern = /^(?<year>\d{4})-(?<month>\d{2})-\d{2}$/;
   const match = datePattern.exec(isoDate);
@@ -41,7 +41,6 @@ export const previousMonth = (month: MonthKey): MonthKey => fromIndex(toIndex(mo
 
 export const nextMonth = (month: MonthKey): MonthKey => fromIndex(toIndex(month) + 1);
 
-/** Every month from `from` through `to`, inclusive, ascending. */
 export const monthRange = (from: MonthKey, to: MonthKey): readonly MonthKey[] => {
   const start = toIndex(from);
   const end = toIndex(to);
@@ -49,5 +48,5 @@ export const monthRange = (from: MonthKey, to: MonthKey): readonly MonthKey[] =>
   return Array.from({ length: end - start + 1 }, (_, offset) => fromIndex(start + offset));
 };
 
-/** Number of months from `from` to `to` - 0 if equal, negative if `to` is earlier. */
+/** Negative if `to` is earlier than `from`. */
 export const monthsBetween = (from: MonthKey, to: MonthKey): number => toIndex(to) - toIndex(from);

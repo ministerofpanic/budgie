@@ -94,10 +94,10 @@ Internal packages are consumed as TypeScript source (no build step), so
   silently overwriting someone else's edit. Reports, Scheduled, Sharing,
   CSV import, and bank linking are deliberately online-only for now.
   Both dev and production builds run webpack explicitly (`next dev
-  --webpack`, `next build --webpack`) since Serwist's plugin doesn't yet
+--webpack`, `next build --webpack`) since Serwist's plugin doesn't yet
   support Turbopack - it breaks under Turbopack even in dev. Serwist itself
   is still only enabled for the production build (`disable:
-  process.env.NODE_ENV !== "production"` in `next.config.ts`), so dev never
+process.env.NODE_ENV !== "production"` in `next.config.ts`), so dev never
   compiles a real service worker.
 
 ## Environment

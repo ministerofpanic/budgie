@@ -20,7 +20,6 @@ export type MoneyError =
   | { readonly kind: "unparseable"; readonly received: string }
   | { readonly kind: "too-many-decimals"; readonly received: string };
 
-/** Assert a raw number is a valid pence value. */
 export const pence = (value: number): Result<Pence, MoneyError> => {
   if (!Number.isFinite(value)) return err({ kind: "not-finite", received: value });
   if (!Number.isInteger(value)) return err({ kind: "not-an-integer", received: value });
@@ -40,10 +39,7 @@ export const isNegative = (value: Pence): boolean => value < 0;
 export const isPositive = (value: Pence): boolean => value > 0;
 export const isZero = (value: Pence): boolean => value === 0;
 
-/**
- * Parse user input: "12.34", "£12.34", "1,234.56", "-5", "(5)" for negatives.
- * An empty string is not zero - the caller decides what a blank field means.
- */
+/** An empty string is not zero - the caller decides what a blank field means. */
 export const parseAmount = (input: string): Result<Pence, MoneyError> => {
   const trimmed = input.trim();
   if (trimmed === "") return err({ kind: "unparseable", received: input });

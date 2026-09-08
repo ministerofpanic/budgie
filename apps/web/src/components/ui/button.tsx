@@ -32,8 +32,7 @@ const buttonVariants = cva(
 type ButtonProps = React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     readonly asChild?: boolean;
-    /** Shows a spinner and disables the button - the visual cue that was
-     * missing when a button just went `disabled` with no other change. */
+    /** Shows a spinner and disables the button - `disabled` alone gave no visual cue. */
     readonly loading?: boolean;
   };
 
