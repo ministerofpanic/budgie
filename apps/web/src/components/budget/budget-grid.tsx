@@ -495,30 +495,44 @@ const CategoryRow = ({
   const [editing, setEditing] = useState(false);
   const toggleEdit = useCallback(() => setEditing((current) => !current), []);
 
+  const statLabelClass =
+    "text-muted-foreground text-[10px] font-medium tracking-wide uppercase sm:hidden";
+
   return (
-    <div className="hover:bg-accent/40 -mx-2 rounded-lg px-2 py-2.5 transition-colors">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:grid sm:grid-cols-[1fr_auto_auto_auto_auto]">
+    <div className="hover:bg-accent/40 -mx-2 rounded-lg px-2 py-3 transition-colors sm:py-2.5">
+      <div className="flex flex-wrap items-end gap-x-4 gap-y-3 sm:grid sm:grid-cols-[1fr_auto_auto_auto_auto] sm:items-center sm:gap-3">
         <p className="min-w-0 basis-full truncate text-sm font-medium sm:basis-auto">
           {category.name}
         </p>
-        <AssignInput
-          key={month}
-          categoryId={category.id}
-          categoryName={category.name}
-          month={month}
-          initial={category.assigned}
-        />
-        <span className="tabular text-muted-foreground w-20 text-right text-sm">
-          {money(category.activity)}
-        </span>
-        <span
-          className={`tabular w-20 text-right text-sm font-semibold ${
-            category.available < 0 ? "text-money-negative" : "text-money-positive"
-          }`}
-        >
-          {money(category.available)}
-        </span>
-        <CategoryRowMenu categoryId={category.id} editing={editing} onToggleEdit={toggleEdit} />
+        <div className="flex flex-col gap-1">
+          <span className={statLabelClass}>Assigned</span>
+          <AssignInput
+            key={month}
+            categoryId={category.id}
+            categoryName={category.name}
+            month={month}
+            initial={category.assigned}
+          />
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <span className={statLabelClass}>Activity</span>
+          <span className="tabular text-muted-foreground w-20 text-right text-sm">
+            {money(category.activity)}
+          </span>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <span className={statLabelClass}>Available</span>
+          <span
+            className={`tabular w-20 text-right text-sm font-semibold ${
+              category.available < 0 ? "text-money-negative" : "text-money-positive"
+            }`}
+          >
+            {money(category.available)}
+          </span>
+        </div>
+        <div className="ml-auto sm:ml-0">
+          <CategoryRowMenu categoryId={category.id} editing={editing} onToggleEdit={toggleEdit} />
+        </div>
       </div>
       {category.target && category.targetProgress ? (
         <div className="mt-1.5 pr-9 pl-0">
