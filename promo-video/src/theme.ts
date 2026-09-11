@@ -4,6 +4,9 @@ export const colors = {
   bgAlt: "#132019",
   primary: "#1f6b52",
   primaryLight: "#2f9873",
+  // Brighter than primaryLight specifically for text on the dark bg -
+  // primaryLight reads as ~2.7:1 contrast there, too low to read at a glance.
+  highlight: "#4ade80",
   paper: "#fbfdfb",
   muted: "#a8b8b2",
   negative: "#c1554a",

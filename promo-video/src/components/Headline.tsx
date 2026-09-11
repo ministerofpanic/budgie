@@ -22,7 +22,7 @@ const Word = ({
         transform: `translateY(${translateY}px)`,
         opacity: progress,
         marginRight: "0.28em",
-        color: highlighted ? colors.primaryLight : undefined,
+        color: highlighted ? colors.highlight : undefined,
       }}
     >
       {word}

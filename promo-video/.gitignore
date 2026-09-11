@@ -1,3 +1,7 @@
 node_modules
 out
 .DS_Store
+
+# Licensed music/SFX (Uppbeat etc.) - used locally to produce out/sizzle.mp4
+# but not ours to redistribute as standalone files in a public repo.
+public/*.mp3

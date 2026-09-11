@@ -1,4 +1,12 @@
-import { interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import {
+  Audio,
+  interpolate,
+  Sequence,
+  spring,
+  staticFile,
+  useCurrentFrame,
+  useVideoConfig,
+} from "remotion";
 import { Background } from "../components/Background";
 import { BirdMark } from "../components/BirdMark";
 import { Headline } from "../components/Headline";
@@ -15,6 +23,9 @@ const Opening = () => {
 
   return (
     <Background>
+      <Sequence from={45}>
+        <Audio src={staticFile("ui-positive-alert-ding-om-fx-1-1-00-04.mp3")} volume={0.5} />
+      </Sequence>
       <div
         style={{
           width: "100%",

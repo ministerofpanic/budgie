@@ -10,7 +10,11 @@ const points = ["No subscription, ever", "Self-hosted - your data, your server",
 const Point = ({ text, delay }: { readonly text: string; readonly delay: number }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const progress = spring({ frame: frame - delay, fps, config: { damping: 14 } });
+  const progress = spring({
+    frame: frame - delay,
+    fps,
+    config: { damping: 14 },
+  });
 
   return (
     <div
@@ -36,7 +40,16 @@ const Point = ({ text, delay }: { readonly text: string; readonly delay: number 
       >
         <CheckIcon size={18} />
       </div>
-      <span style={{ fontFamily, fontSize: 34, color: colors.paper, fontWeight: 500 }}>{text}</span>
+      <span
+        style={{
+          fontFamily,
+          fontSize: 34,
+          color: colors.paper,
+          fontWeight: 500,
+        }}
+      >
+        {text}
+      </span>
     </div>
   );
 };

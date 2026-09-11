@@ -22,7 +22,7 @@ const BudgetDemo = () => (
       <Headline
         text="Zero-based budgeting, done right."
         size={34}
-        startFrame={165}
+        startFrame={50}
         highlight="right."
       />
     </div>
