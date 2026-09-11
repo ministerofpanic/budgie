@@ -1,9 +1,8 @@
-import { FeatureScene } from "../components/FeatureScene";
-import { DownloadIcon } from "../components/icons";
+import { ScreenshotScene } from "../components/ScreenshotScene";
 
 const NoLockIn = () => (
-  <FeatureScene
-    icon={<DownloadIcon size={64} />}
+  <ScreenshotScene
+    src="screens/accounts-menu.png"
     headline="Your data. Never locked in."
     highlight="locked"
     caption="Import and export via CSV, any time. No payment wall, anywhere."

@@ -1,14 +1,25 @@
 import { colors } from "../theme";
 
-// Exact recreation of apps/web/src/app/icon.svg for brand consistency.
+// Exact recreation of apps/web/src/app/icon.svg for brand consistency
+// (lucide-react's "Bird" glyph, matching the app header).
 const BirdMark = ({ size = 120 }: { readonly size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
     <rect width="32" height="32" rx="8" fill={colors.primary} />
-    <path
-      d="M9 20c0-5 3.5-9 9-9 2.8 0 4.5 1.4 4.5 1.4l-2 1.6 2 .8s-1 3.3-4.5 4.4C16.5 22 13 23.5 9 23.5c1.3-1 2-2 2.3-3.1C10.2 20.9 9 20 9 20Z"
-      fill="white"
-    />
-    <circle cx="19.5" cy="13" r="1" fill={colors.primary} />
+    <g
+      transform="translate(6.5, 6.5) scale(0.79)"
+      stroke="white"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    >
+      <path d="M16 7h.01" />
+      <path d="M3.4 18H12a8 8 0 0 0 8-8V7a4 4 0 0 0-7.28-2.3L2 20" />
+      <path d="m20 7 2 .5-2 .5" />
+      <path d="M10 18v3" />
+      <path d="M14 17.75V21" />
+      <path d="M7 18a6 6 0 0 0 3.84-10.61" />
+    </g>
   </svg>
 );
 

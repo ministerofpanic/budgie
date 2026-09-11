@@ -2,7 +2,11 @@
 // package genuinely self-contained the way the isolation was meant to work.
 import type { CSSProperties } from "react";
 
-type IconProps = { readonly size?: number; readonly color?: string; readonly style?: CSSProperties };
+type IconProps = {
+  readonly size?: number;
+  readonly color?: string;
+  readonly style?: CSSProperties;
+};
 
 const base = (size: number) => ({
   width: size,

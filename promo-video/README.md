@@ -1,6 +1,6 @@
 # Budgie sizzle reel
 
-A 45-second vertical (1080x1920) promo video built with
+A 49-second vertical (1080x1920) promo video built with
 [Remotion](https://remotion.dev), fully isolated from the main app's pnpm
 workspace - its own `pnpm-workspace.yaml` stops it being picked up by the
 root workspace, so it has its own `node_modules`/lockfile and never touches
@@ -11,12 +11,19 @@ the app's dependency graph or `catalog:` version pins.
 - `src/theme.ts` - colours pulled directly from the real app (`icon.svg`,
   `opengraph-image.tsx`) so the video is genuinely on-brand.
 - `src/components/` - reusable primitives (headline word-stagger, icon
-  badges, the bird mark, scene cross-fades).
+  badges, the bird mark, scene cross-fades, `PhoneShot`/`ScreenshotScene` for
+  compositing real UI captures into a phone frame).
 - `src/scenes/` - one file per beat. `Sizzle.tsx` sequences them; edit the
   `duration` numbers there to re-pace.
 - `src/components/icons.tsx` - hand-drawn inline SVGs (bank, globe, wifi-off,
   fingerprint, users, download) - no external icon font/asset dependency,
   keeping the package genuinely self-contained.
+- `public/screens/*.png` - real screenshots of the running app (budget grid,
+  register, reports, sign-in, accounts menu), captured via
+  `apps/web/e2e/capture-screenshots.spec.ts`. Re-run that spec (against a
+  production build - `pnpm build && pnpm start` - not the dev server, since
+  dev's React Strict Mode double-fires the WebAuthn ceremony) whenever the
+  UI changes enough that these go stale, then re-render.
 
 ## Commands
 
@@ -30,9 +37,11 @@ pnpm typecheck
 ## What's covered
 
 Opening hook -> the problem (bank apps show spend, not what's free) ->
-zero-based budgeting demo (animated category rows + Ready to Assign
-counting to zero) -> real bank sync -> multi-currency -> offline-first ->
-passkeys -> shared budgets -> no lock-in (CSV export) -> closing card.
+zero-based budgeting demo (real budget grid screenshot) -> real bank sync
+(real accounts-menu screenshot) -> reports (real reports screenshot) ->
+multi-currency -> offline-first -> passkeys (real sign-in screenshot) ->
+shared budgets -> no lock-in (real accounts-menu screenshot again, CSV
+export) -> closing card.
 
 ## Adding music (uppbeat.io)
 
@@ -54,10 +63,5 @@ to land on the music.
 
 ## Suggested other assets (optional, not required)
 
-- A real screen-recording of the budget grid/register (e.g. via the
-  project's own Playwright e2e setup) composited into the `BudgetDemo` or
-  `Offline` scene would add authenticity alongside the current motion-
-  graphics recreation - `<Video src={staticFile("demo.mp4")} />` in the
-  same way as the audio above.
 - An end-card QR code linking to the real deployment, if you want a scan-
   to-try CTA instead of (or alongside) the text-only "Try Budgie today".

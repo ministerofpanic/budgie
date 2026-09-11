@@ -1,12 +1,11 @@
-import { FeatureScene } from "../components/FeatureScene";
-import { BankIcon } from "../components/icons";
+import { ScreenshotScene } from "../components/ScreenshotScene";
 
 const BankSync = () => (
-  <FeatureScene
-    icon={<BankIcon size={64} />}
+  <ScreenshotScene
+    src="screens/register.png"
     headline="Real bank sync."
     highlight="sync."
-    caption="Connect your accounts via Open Banking - transactions arrive automatically, no manual entry."
+    caption="Connect via Open Banking - transactions arrive automatically, no manual entry."
   />
 );
 

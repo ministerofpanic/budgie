@@ -2,8 +2,8 @@
   "name": "budgie-promo-video",
   "version": "0.0.0",
   "private": true,
-  "type": "module",
   "description": "Remotion project for Budgie's promo sizzle reel - isolated from the main app's workspace/dependencies.",
+  "type": "module",
   "scripts": {
     "start": "remotion studio src/index.ts",
     "render": "remotion render src/index.ts Sizzle out/sizzle.mp4",
