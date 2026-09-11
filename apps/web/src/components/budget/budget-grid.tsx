@@ -497,8 +497,10 @@ const CategoryRow = ({
 
   return (
     <div className="hover:bg-accent/40 -mx-2 rounded-lg px-2 py-2.5 transition-colors">
-      <div className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-3">
-        <p className="min-w-0 truncate text-sm font-medium">{category.name}</p>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:grid sm:grid-cols-[1fr_auto_auto_auto_auto]">
+        <p className="min-w-0 basis-full truncate text-sm font-medium sm:basis-auto">
+          {category.name}
+        </p>
         <AssignInput
           key={month}
           categoryId={category.id}
@@ -567,7 +569,7 @@ const CategoryGroupSection = ({
 );
 
 const ColumnHeaders = () => (
-  <div className="text-muted-foreground grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-3 text-xs font-medium tracking-wide uppercase">
+  <div className="text-muted-foreground hidden items-center gap-3 text-xs font-medium tracking-wide uppercase sm:grid sm:grid-cols-[1fr_auto_auto_auto_auto]">
     <span>Category</span>
     <span className="w-24 text-right">Assigned</span>
     <span className="w-20 text-right">Activity</span>
